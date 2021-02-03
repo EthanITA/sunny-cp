@@ -9,21 +9,21 @@ The request file is a csv file with | as separator having the following columns:
 It can be created also by running the command create_request_list
 """
 
-import logging
-import json
 import datetime
-import requests
-import sqlite3
-import os
 import hashlib
-import Queue
-from threading import Thread
+import json
+import logging
+import os
+import sqlite3
 import sys
 import time
+from threading import Thread
 
 import click
+import queue
+import requests
 
-QUEUE = Queue.Queue()
+QUEUE = queue.Queue()
 MZN_ID = 0
 DZN_ID = 1
 SOL_ID = 2
@@ -39,6 +39,7 @@ REQUESTS_TIMEOUT = 3610
 # for reporting what is in seconds a significant time difference
 SIGNIFICANT_TIME_DIFFERENCE = 10
 
+
 @click.group()
 @click.option('--log-level',
               help='Log level (DEBUG, INFO, WARNING, ERROR or CRITICAL)',
@@ -49,11 +50,12 @@ def cli(log_level):
     logging.basicConfig(format="[%(asctime)s][%(levelname)s][%(name)s]%(message)s",
                         level=log_level)
 
+
 ################################
 # Utility functions
 ################################
 
-def get_hash_id(mzn_file,dzn_file):
+def get_hash_id(mzn_file, dzn_file):
     '''
     Computes the hash to be used as id for the instance
     '''
@@ -66,14 +68,15 @@ def get_hash_id(mzn_file,dzn_file):
     id = h.hexdigest()
     return id
 
+
 ################################
 # Get the list
 ################################
 
 def get_mzn_dzn_pairs(dir_name):
-    dirs = [os.path.join(dir_name,f) for f in os.listdir(dir_name) if os.path.isdir(os.path.join(dir_name,f))]
-    mzn = [os.path.join(dir_name,f) for f in os.listdir(dir_name) if f.endswith(".mzn") and not f.startswith(".")]
-    dzn = [os.path.join(dir_name,f) for f in os.listdir(dir_name) if f.endswith(".dzn") and not f.startswith(".")]
+    dirs = [os.path.join(dir_name, f) for f in os.listdir(dir_name) if os.path.isdir(os.path.join(dir_name, f))]
+    mzn = [os.path.join(dir_name, f) for f in os.listdir(dir_name) if f.endswith(".mzn") and not f.startswith(".")]
+    dzn = [os.path.join(dir_name, f) for f in os.listdir(dir_name) if f.endswith(".dzn") and not f.startswith(".")]
 
     ls = []
     for d in dirs:
@@ -82,11 +85,12 @@ def get_mzn_dzn_pairs(dir_name):
     if not mzn:
         if not dirs:
             logging.warning("In directory {} found {} mzn files and {} dzn files. Skipping directory".format(
-                dir_name,len(mzn),len(dzn)))
+                dir_name, len(mzn), len(dzn)))
         return ls
     if not dzn:
-        return ls + [(x,"") for x in mzn]
-    return ls + [(x,y) for x in mzn for y in dzn]
+        return ls + [(x, "") for x in mzn]
+    return ls + [(x, y) for x in mzn for y in dzn]
+
 
 @click.command()
 @click.option('--request-file',
@@ -99,7 +103,7 @@ def get_mzn_dzn_pairs(dir_name):
               type=click.Path(exists=True, file_okay=False, dir_okay=True, writable=False, readable=True,
                               resolve_path=True),
               default="./")
-@click.option('--solver','-s',multiple=True,
+@click.option('--solver', '-s', multiple=True,
               help='Solver to use',
               default=[])
 @click.option('--database-file',
@@ -124,7 +128,7 @@ def create_request_list(
         database_file,
         extra_options,
         exclude_list
-        ):
+):
     '''
     Create the request list using mzn, dzn files in a directory.
     '''
@@ -139,40 +143,43 @@ def create_request_list(
 
     exclude_instances = []
     if exclude_list:
-        with open(exclude_list[0],"rb") as f:
+        with open(exclude_list[0], "rb") as f:
             row_lines = f.readlines()
             for line in row_lines:
                 if line.strip():
-                    ls = line.replace("\n","").split('|')
+                    ls = line.replace("\n", "").split('|')
                     if len(ls) != 4:
                         logging.critical("The line {} of the exclude list file {} is not formatted correctly".format(
                             line.strip(), exclude_list))
                         sys.exit(1)
                     if ls[-1] == "*" or extra_options == ls[-1]:
-                        exclude_instances.append((ls[0],ls[1],ls[2]))
+                        exclude_instances.append((ls[0], ls[1], ls[2]))
 
     if database_file:
         logging.info("Computing the hash functions of the instances")
-        maps_id_pair = {get_hash_id(x,y):(x,y) for (x,y) in mzn_dzn_pair}
-        maps_pair_id = {maps_id_pair[x]:x for x in maps_id_pair}
+        maps_id_pair = {get_hash_id(x, y): (x, y) for (x, y) in mzn_dzn_pair}
+        maps_pair_id = {maps_id_pair[x]: x for x in maps_id_pair}
         logging.info("Using the hash function {} unique problems to solve were found".format(len(maps_id_pair)))
 
         connection = sqlite3.connect(database_file[0])
         cursor = connection.cursor()
-        with open(request_file,'wb') as f:
-            for (x,y,z) in [(x,y,z) for z in solver for (x,y) in maps_pair_id if (x,y,z) not in exclude_instances]:
-                cursor.execute("SELECT count(*) FROM results WHERE id = ? AND solvers= ?", (maps_pair_id[(x,y)],z))
+        with open(request_file, 'wb') as f:
+            for (x, y, z) in [(x, y, z) for z in solver for (x, y) in maps_pair_id if
+                              (x, y, z) not in exclude_instances]:
+                cursor.execute("SELECT count(*) FROM results WHERE id = ? AND solvers= ?", (maps_pair_id[(x, y)], z))
                 data = cursor.fetchone()[0]
                 if data == 0:
                     f.write("{}|{}|{}|{}\n".format(x, y, z, extra_options))
                 else:
-                    logging.warning("Solver {} already used to solve problem {}".format(z,[x,y]))
+                    logging.warning("Solver {} already used to solve problem {}".format(z, [x, y]))
         connection.close()
 
     else:
-        with open(request_file,'wb') as f:
-            for (x,y,z) in [(x,y,z) for z in solver for (x,y) in mzn_dzn_pair if (x,y,z) not in exclude_instances]:
-                f.write("{}|{}|{}|{}\n".format(x,y,z,extra_options))
+        with open(request_file, 'wb') as f:
+            for (x, y, z) in [(x, y, z) for z in solver for (x, y) in mzn_dzn_pair if
+                              (x, y, z) not in exclude_instances]:
+                f.write("{}|{}|{}|{}\n".format(x, y, z, extra_options))
+
 
 cli.add_command(create_request_list)
 
@@ -188,9 +195,9 @@ def parse_solver_output(output):
     '''
     result = {}
     optimization_problem = False
-    result["result"] = "unk" # alternative values: sat,uns,opt
-    result["solutions"] = {} # stores the solutions
-    result["time"] = -1 # stores the final time of the algorithm when terminated before the timeout
+    result["result"] = "unk"  # alternative values: sat,uns,opt
+    result["solutions"] = {}  # stores the solutions
+    result["time"] = -1  # stores the final time of the algorithm when terminated before the timeout
     obj_val = -1
     time = -1
     try:
@@ -220,10 +227,10 @@ def parse_solver_output(output):
                 result["time"] = float(line[len("% Search completed at time: "):])
         return result
     except ValueError as e:
-        return {"error": unicode(e)}
+        return {"error": str(e)}
 
 
-def worker(thread_num,database_file,timeout,url,hostname):
+def worker(thread_num, database_file, timeout, url, hostname):
     '''
     Sends jobs to the server, collects answers, parse them and update the DB
     '''
@@ -253,16 +260,18 @@ def worker(thread_num,database_file,timeout,url,hostname):
                                                  timeout=REQUESTS_TIMEOUT
                                                  )
                         time.sleep(SLEEP_TIME)
-                        logging.debug("Thread {} received answer with code {}.".format(thread_num, response.status_code))
+                        logging.debug(
+                            "Thread {} received answer with code {}.".format(thread_num, response.status_code))
                         # handle error in the answer
                         if response.status_code != requests.codes.ok:
-                            logging.error("Error {}. Thread {}. Feature vector request ended up with error {}, response {}.".format(
-                                item, thread_num, response.status_code, response.text))
+                            logging.error(
+                                "Error {}. Thread {}. Feature vector request ended up with error {}, response {}.".format(
+                                    item, thread_num, response.status_code, response.text))
                             time.sleep(SLEEP_TIME_AFTER_ERROR)
                             continue
                         # parse the answer
                         try:
-                            feature_vector = [float(x) for x in response.text.replace("nan","1").split(",")]
+                            feature_vector = [float(x) for x in response.text.replace("nan", "1").split(",")]
                             # the s_goal is the feature having index 59
                             s_goal = feature_vector[59]
                             logging.debug("Obtained feature vector {}".format(feature_vector))
@@ -285,7 +294,7 @@ def worker(thread_num,database_file,timeout,url,hostname):
                                            item[MZN_ID],
                                            item[DZN_ID] if item[DZN_ID] else "",
                                            goal,
-                                           unicode(feature_vector),
+                                           str(feature_vector),
                                            datetime.datetime.now()))
                         connection.commit()
                     else:
@@ -295,16 +304,16 @@ def worker(thread_num,database_file,timeout,url,hostname):
                     # try to solve the problem remotely
                     files = {'mzn': open(item[MZN_ID], 'rb'),
                              '-P': item[SOL_ID],
-                             '-T': unicode(timeout)}
+                             '-T': str(timeout)}
                     if item[DZN_ID]:
                         files['dzn'] = open(item[DZN_ID], 'rb')
                     if goal != "sat":
                         files['-a'] = ""
                     if item[OPTIONS_ID]:
                         ls = [x.split("=") for x in item[OPTIONS_ID].split(";")]
-                        ls_errors = [ x for x in ls if len(x) != 2]
+                        ls_errors = [x for x in ls if len(x) != 2]
                         if ls_errors:
-                            logging.warning("Ignoring options {} for instance {}".format(ls_errors,item))
+                            logging.warning("Ignoring options {} for instance {}".format(ls_errors, item))
                         for option in [x for x in ls if len(x) == 2]:
                             files[option[0]] = option[1]
 
@@ -313,7 +322,7 @@ def worker(thread_num,database_file,timeout,url,hostname):
                                              headers={'host': hostname} if hostname else {},
                                              timeout=REQUESTS_TIMEOUT)
                     time.sleep(SLEEP_TIME)
-                    logging.debug("Thread {} received answer with code {}.".format(thread_num,response.status_code))
+                    logging.debug("Thread {} received answer with code {}.".format(thread_num, response.status_code))
                     if response.status_code != requests.codes.ok:
                         logging.error("Error {}. Thread {}. Ended up with error {}, response {}.".format(
                             item, thread_num, response.status_code, response.text))
@@ -321,20 +330,22 @@ def worker(thread_num,database_file,timeout,url,hostname):
                         # parse the response
                         json_result = parse_solver_output(response.text)
                         if "error" in json_result:
-                            logging.error("Error {}. Thread {}. Wrong parse of answer {} in response <<<<< {} >>>>>".format(
-                                item, thread_num, json_result["error"],response.text
-                            ))
+                            logging.error(
+                                "Error {}. Thread {}. Wrong parse of answer {} in response <<<<< {} >>>>>".format(
+                                    item, thread_num, json_result["error"], response.text
+                                ))
                         else:
                             logging.debug("Parsed solution into json object {}".format(json.dumps(json_result)))
                             logging.debug("Update the DB for item {}".format(item))
-                            cursor.execute("INSERT or REPLACE INTO results(id,solvers,timeout,date,output) VALUES (?,?,?,?,?)", (
-                                id,
-                                item[SOL_ID],
-                                timeout,
-                                datetime.datetime.now(),
-                                json.dumps(json_result)))
+                            cursor.execute(
+                                "INSERT or REPLACE INTO results(id,solvers,timeout,date,output) VALUES (?,?,?,?,?)", (
+                                    id,
+                                    item[SOL_ID],
+                                    timeout,
+                                    datetime.datetime.now(),
+                                    json.dumps(json_result)))
                             connection.commit()
-                            logging.info("OK {}|{}".format(item,id))
+                            logging.info("OK {}|{}".format(item, id))
                 else:
                     logging.error("ERROR {}. Thread {}. Request not well formed".format(item, thread_num, item[DZN_ID]))
             except requests.exceptions.RequestException as e:
@@ -347,13 +358,12 @@ def worker(thread_num,database_file,timeout,url,hostname):
                 time.sleep(SLEEP_TIME_AFTER_ERROR)
             finally:
                 QUEUE.task_done()
-        except Queue.Empty:
+        except queue.Empty:
             # Handle empty queue here
             break
 
     connection.close()
     logging.info("Thread {} terminated".format(thread_num))
-
 
 
 @click.command()
@@ -383,12 +393,12 @@ def worker(thread_num,database_file,timeout,url,hostname):
                               resolve_path=True),
               default="requests.csv")
 def send_jobs(server_url,
-         server_port,
-         server_host,
-         parallel_requests,
-         request_file,
-         database_file,
-         timeout):
+              server_port,
+              server_host,
+              parallel_requests,
+              request_file,
+              database_file,
+              timeout):
     '''
     Solve the instances remotely and update the DB
     '''
@@ -425,13 +435,13 @@ def send_jobs(server_url,
         row_lines = f.readlines()
         for line in row_lines:
             if line.strip():
-                lines.append(line.replace("\n","").split('|'))
+                lines.append(line.replace("\n", "").split('|'))
                 if len(lines[-1]) != 4:
                     logging.critical("The line {} of the request file {} is not formatted correctly".format(
-                        line.strip(),request_file))
+                        line.strip(), request_file))
                     sys.exit(1)
 
-    logging.info("Read {} requests from file {}".format(len(lines),request_file))
+    logging.info("Read {} requests from file {}".format(len(lines), request_file))
 
     # Add jobs in the queue
     for line in lines:
@@ -439,12 +449,14 @@ def send_jobs(server_url,
 
     for i in range(parallel_requests):
         worker_thread = Thread(target=worker, args=(i, database_file, timeout,
-                                                    server_url + ":" + server_port,server_host))
+                                                    server_url + ":" + server_port, server_host))
         worker_thread.daemon = True
         worker_thread.start()
 
     QUEUE.join()
     logging.info("Execution terminated.")
+
+
 cli.add_command(send_jobs)
 
 
@@ -490,7 +502,7 @@ def generate_kb_files(
 
     logging.info("Start to create the info_file")
     with open(info_file, 'wb') as f:
-        for (id,solvers,timeout_inst,output) in cursor.execute("SELECT id,solvers,timeout,output FROM results", ()):
+        for (id, solvers, timeout_inst, output) in cursor.execute("SELECT id,solvers,timeout,output FROM results", ()):
             # instance id not found in table
             if id not in instance_type:
                 logging.warning("Id {} not found. Result ignored".format(id))
@@ -498,15 +510,15 @@ def generate_kb_files(
             result = json.loads(output)
 
             # timeout too low
-            if timeout > timeout_inst and (result["time"] <=0 or result["time"] > timeout):
+            if timeout > timeout_inst and (result["time"] <= 0 or result["time"] > timeout):
                 logging.warning("Timeout {} for instance {} and solvers {} is not enough. Ignored".format(
-                    timeout_inst,id,solvers))
+                    timeout_inst, id, solvers))
                 continue
 
             # solver ended up in error
             if result["result"] == "unk" and result["time"] > 0:
                 logging.warning("Erronous execution for instance {} and solvers {}. Ignored".format(
-                    id,solvers))
+                    id, solvers))
                 continue
 
             # timeout too big
@@ -514,8 +526,8 @@ def generate_kb_files(
                 result["time"] = timeout
                 if instance_type[id] == "sat":
                     result["result"] = "unk"
-                else: # min or max problem
-                    result["solutions"] = {float(i):result["solutions"][i] for i in result["solutions"]
+                else:  # min or max problem
+                    result["solutions"] = {float(i): result["solutions"][i] for i in result["solutions"]
                                            if float(i) < timeout}
                     if result["result"] == "uns":
                         result["result"] = "unk"
@@ -532,9 +544,9 @@ def generate_kb_files(
             result["val"] = "nan"
             if result["solutions"]:
                 if instance_type[id] == "min":
-                    result["val"] = unicode(min(result["solutions"].values()))
+                    result["val"] = str(min(result["solutions"].values()))
                 elif instance_type[id] == "max":
-                    result["val"] = unicode(max(result["solutions"].values()))
+                    result["val"] = str(max(result["solutions"].values()))
 
             # discard the results where result is unknown
             if result["result"] == "unk":
@@ -548,23 +560,26 @@ def generate_kb_files(
                 result["result"],
                 result["time"],
                 result["val"],
-                json.dumps(result["solutions"]).replace('"','')
+                json.dumps(result["solutions"]).replace('"', '')
             ))
             used_instances.add(id)
 
     logging.info("Start to create the feature_file")
     instance_type = {}
-    with open(feature_file,'wb') as f:
+    with open(feature_file, 'wb') as f:
         for row in cursor.execute("SELECT id,features,type FROM instances", ()):
             if row[0] in used_instances:
                 # structure: inst|[f_1, ..., f_n]
-                f.write("{}|{}\n".format(row[0],row[1]))
-
-
+                f.write("{}|{}\n".format(row[0], row[1]))
 
     connection.close()
-    logging.info("To generate the KB directory test_kb locally run 'python $SUNNY_HOME/kb/util/csv2kb.py -p . test_kb {} {}'".format(feature_file,info_file))
+    logging.info(
+        "To generate the KB directory test_kb locally run 'python $SUNNY_HOME/kb/util/csv2kb.py -p . test_kb {} {}'".format(
+            feature_file, info_file))
+
+
 cli.add_command(generate_kb_files)
+
 
 ################################
 # Check the KB for anomalies and solver errors
@@ -577,7 +592,7 @@ cli.add_command(generate_kb_files)
               default='sunny_db.db')
 def check_anomalies(
         database_file,
-        ):
+):
     """
     Check for possible anomalies in the results
     """
@@ -599,9 +614,10 @@ def check_anomalies(
     for i in results:
         for j in results[i]:
             if results[i][j]["result"] == "unb":
-                logging.info("UNBOUND: instance {}, solver {}".format(instances[i],j))
+                logging.info("UNBOUND: instance {}, solver {}".format(instances[i], j))
             elif results[i][j]["result"] == "unk" and results[i][j]["time"] > 0:
-                logging.info("SOLVER ERROR: instance {}, solver {} terminated with unk before the timeout".format(instances[i][0:2], j))
+                logging.info("SOLVER ERROR: instance {}, solver {} terminated with unk before the timeout".format(
+                    instances[i][0:2], j))
 
     # opt value is consistent
     possible_erroneous_solvers = set([])
@@ -610,7 +626,8 @@ def check_anomalies(
             sat = [j for j in results[i] if results[i][j]["result"] == "sat"]
             unsat = [j for j in results[i] if results[i][j]["result"] == "uns"]
             if sat and unsat:
-                logging.info("SAT-UNSAT inconsistency: instance {}, sat {}, unsat {}".format(instances[i][0:2],sat,unsat))
+                logging.info(
+                    "SAT-UNSAT inconsistency: instance {}, sat {}, unsat {}".format(instances[i][0:2], sat, unsat))
                 if len(sat) > len(unsat):
                     logging.info("Possible culprits {}".format(unsat))
                     possible_erroneous_solvers.update(unsat)
@@ -618,9 +635,10 @@ def check_anomalies(
                     logging.info("Possible culprits {}".format(sat))
                     possible_erroneous_solvers.update(sat)
                 else:
-                    if not(set(sat).issubset(possible_erroneous_solvers) or set(unsat).issubset(possible_erroneous_solvers)):
+                    if not (set(sat).issubset(possible_erroneous_solvers) or set(unsat).issubset(
+                            possible_erroneous_solvers)):
                         logging.info("Impossible to automatically detect culprits. Manual intervention needed.")
-        else: # min or max problems
+        else:  # min or max problems
             best_values = {}
             for j in results[i]:
                 if results[i][j]["solutions"]:
@@ -632,10 +650,10 @@ def check_anomalies(
             op_values.update([best_values[j] for j in best_values if results[i][j]["result"] == "opt"])
             if len(op_values) > 1:
                 logging.info("TWO OPTIMA: instance {}, values {}".format(
-                    instances[i][0:2],{x: best_values[x] for x in best_values if results[i][x]["result"] == "opt"}))
+                    instances[i][0:2], {x: best_values[x] for x in best_values if results[i][x]["result"] == "opt"}))
                 culprit_dict = {x: [y for y in best_values if results[i][y]["result"] == "opt" and best_values[y] == x]
                                 for x in op_values}
-                culprit_list = sorted([(len(culprit_dict[x]),x) for x in culprit_dict])
+                culprit_list = sorted([(len(culprit_dict[x]), x) for x in culprit_dict])
                 set_A = set(culprit_dict[culprit_list[0][1]])
                 set_B = set(culprit_dict[culprit_list[1][1]])
                 if culprit_list[0][0] < culprit_list[1][0]:
@@ -675,18 +693,20 @@ def check_anomalies(
                 statistics[j][results[i][j]["result"]] += 1
 
         if instances[i][2] == "sat":
-            solvers = sorted([(results[i][x]["time"],x) for x in results[i] if
-                               results[i][x]["result"] == "sat" or results[i][x]["result"] == "uns"])
+            solvers = sorted([(results[i][x]["time"], x) for x in results[i] if
+                              results[i][x]["result"] == "sat" or results[i][x]["result"] == "uns"])
         else:
-            solvers = sorted([(results[i][x]["time"],x) for x in results[i] if
-                               results[i][x]["result"] == "opt"])
+            solvers = sorted([(results[i][x]["time"], x) for x in results[i] if
+                              results[i][x]["result"] == "opt"])
             if not solvers:
                 if instances[i][2] == "min":
-                    solvers = sorted([(results[i][x]["time"],min(results[i][x]["solutions"].values()),x)
-                                      for x in results[i] if results[i][x]["result"] == "sat" and results[i][x]["solutions"]])
+                    solvers = sorted([(results[i][x]["time"], min(results[i][x]["solutions"].values()), x)
+                                      for x in results[i] if
+                                      results[i][x]["result"] == "sat" and results[i][x]["solutions"]])
                 else:
-                    solvers = sorted([(results[i][x]["time"],max(results[i][x]["solutions"].values()),x)
-                                      for x in results[i] if results[i][x]["result"] == "sat" and results[i][x]["solutions"]])
+                    solvers = sorted([(results[i][x]["time"], max(results[i][x]["solutions"].values()), x)
+                                      for x in results[i] if
+                                      results[i][x]["result"] == "sat" and results[i][x]["solutions"]])
         if solvers:
             if solvers[0][-1] in marginal_solver:
                 marginal_solver[solvers[0][-1]] += 1
@@ -703,11 +723,12 @@ def check_anomalies(
         elif solvers:
             significant_marginal_solver[solvers[0][-1]] += 1
 
-
-    logging.info("Solver responses: {}".format(json.dumps(statistics,indent=2)))
+    logging.info("Solver responses: {}".format(json.dumps(statistics, indent=2)))
     logging.info("Marginal solver: {}".format(json.dumps(marginal_solver, indent=2)))
     logging.info("Significant marginal solver: {}".format(json.dumps(significant_marginal_solver, indent=2)))
     logging.info("Total number of instances: {}".format(len(instances)))
+
+
 cli.add_command(check_anomalies)
 
 if __name__ == '__main__':
