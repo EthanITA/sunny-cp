@@ -14,13 +14,13 @@ import hashlib
 import json
 import logging
 import os
+import queue
 import sqlite3
 import sys
 import time
 from threading import Thread
 
 import click
-import queue
 import requests
 
 QUEUE = queue.Queue()
@@ -56,17 +56,16 @@ def cli(log_level):
 ################################
 
 def get_hash_id(mzn_file, dzn_file):
-    '''
+    """
     Computes the hash to be used as id for the instance
-    '''
+    """
     h = hashlib.sha256()
-    with open(mzn_file) as f:
+    with open(mzn_file, "rb") as f:
         h.update(f.read())
     if dzn_file:
-        with open(dzn_file) as f:
+        with open(dzn_file, "rb") as f:
             h.update(f.read())
-    id = h.hexdigest()
-    return id
+    return h.hexdigest()
 
 
 ################################
@@ -129,9 +128,9 @@ def create_request_list(
         extra_options,
         exclude_list
 ):
-    '''
+    """
     Create the request list using mzn, dzn files in a directory.
-    '''
+    """
     if len(database_file) > 1:
         logging.error("Only one database is supported. Exiting")
         sys.exit(1)
@@ -143,7 +142,7 @@ def create_request_list(
 
     exclude_instances = []
     if exclude_list:
-        with open(exclude_list[0], "rb") as f:
+        with open(exclude_list[0]) as f:
             row_lines = f.readlines()
             for line in row_lines:
                 if line.strip():
@@ -163,7 +162,7 @@ def create_request_list(
 
         connection = sqlite3.connect(database_file[0])
         cursor = connection.cursor()
-        with open(request_file, 'wb') as f:
+        with open(request_file, 'w') as f:
             for (x, y, z) in [(x, y, z) for z in solver for (x, y) in maps_pair_id if
                               (x, y, z) not in exclude_instances]:
                 cursor.execute("SELECT count(*) FROM results WHERE id = ? AND solvers= ?", (maps_pair_id[(x, y)], z))
@@ -175,7 +174,7 @@ def create_request_list(
         connection.close()
 
     else:
-        with open(request_file, 'wb') as f:
+        with open(request_file, 'w') as f:
             for (x, y, z) in [(x, y, z) for z in solver for (x, y) in mzn_dzn_pair if
                               (x, y, z) not in exclude_instances]:
                 f.write("{}|{}|{}|{}\n".format(x, y, z, extra_options))
@@ -190,30 +189,30 @@ cli.add_command(create_request_list)
 
 
 def parse_solver_output(output):
-    '''
-    Parses the output of the output of sunny into a json object
-    '''
+    """
+    Parses the output of the output of sunny into Python dict
+    """
     result = {}
     optimization_problem = False
     result["result"] = "unk"  # alternative values: sat,uns,opt
     result["solutions"] = {}  # stores the solutions
     result["time"] = -1  # stores the final time of the algorithm when terminated before the timeout
     obj_val = -1
-    time = -1
+    solve_time = -1
     try:
         for line in output.split("\n"):
             if line.startswith("% Current Best Bound: "):
                 optimization_problem = True
                 obj_val = int(line[len("% Current Best Bound: "):])
             elif line.startswith("% Current Solution Time: "):
-                time = float(line[len("% Current Solution Time: "):])
+                solve_time = float(line[len("% Current Solution Time: "):])
             elif line.startswith("----------"):
                 result["result"] = "sat"
                 if optimization_problem:
-                    result["solutions"][time] = obj_val
+                    result["solutions"][solve_time] = obj_val
                 else:
-                    result["solutions"][time] = 0
-                    result["time"] = time
+                    result["solutions"][solve_time] = 0
+                    result["time"] = solve_time
             elif line.startswith("=========="):
                 if optimization_problem:
                     result["result"] = "opt"
@@ -231,9 +230,9 @@ def parse_solver_output(output):
 
 
 def worker(thread_num, database_file, timeout, url, hostname):
-    '''
+    """
     Sends jobs to the server, collects answers, parse them and update the DB
-    '''
+    """
     connection = sqlite3.connect(database_file)
     cursor = connection.cursor()
 
@@ -243,14 +242,14 @@ def worker(thread_num, database_file, timeout, url, hostname):
             try:
                 logging.debug("Thread {} process request {}".format(thread_num, item))
                 if os.path.isfile(item[MZN_ID]) and item[SOL_ID] and (not item[DZN_ID] or os.path.isfile(item[DZN_ID])):
-                    id = get_hash_id(item[MZN_ID], item[DZN_ID] if item[DZN_ID] else "")
-                    logging.debug("The hash of the files is {}".format(id))
+                    hash_id = get_hash_id(item[MZN_ID], item[DZN_ID] if item[DZN_ID] else "")
+                    logging.debug("The hash of the files is {}".format(hash_id))
 
                     # check if id is already in the DB or otherwise compute its feature vector
-                    cursor.execute("SELECT count(*) FROM instances WHERE id = ?", (id,))
+                    cursor.execute("SELECT count(*) FROM instances WHERE id = ?", (hash_id,))
                     data = cursor.fetchone()[0]
                     if data == 0:
-                        logging.debug("Instance {} not found in the DB".format(id))
+                        logging.debug("Instance {} not found in the DB".format(hash_id))
                         files = {'mzn': open(item[MZN_ID], 'rb')}
                         if item[DZN_ID]:
                             files['dzn'] = open(item[DZN_ID], 'rb')
@@ -287,10 +286,10 @@ def worker(thread_num, database_file, timeout, url, hostname):
                             goal = "min"
                         elif s_goal == 3:
                             goal = "max"
-                        logging.debug("Update the DB with instance having id {}".format(id))
+                        logging.debug("Update the DB with instance having id {}".format(hash_id))
                         cursor.execute("INSERT or REPLACE INTO instances(id,mzn,dzn,type,features,date) VALUES" +
                                        "(?,?,?,?,?,?)", (
-                                           id,
+                                           hash_id,
                                            item[MZN_ID],
                                            item[DZN_ID] if item[DZN_ID] else "",
                                            goal,
@@ -298,7 +297,7 @@ def worker(thread_num, database_file, timeout, url, hostname):
                                            datetime.datetime.now()))
                         connection.commit()
                     else:
-                        cursor.execute("SELECT type FROM instances WHERE id = ?", (id,))
+                        cursor.execute("SELECT type FROM instances WHERE id = ?", (hash_id,))
                         goal = cursor.fetchone()[0]
 
                     # try to solve the problem remotely
@@ -328,32 +327,32 @@ def worker(thread_num, database_file, timeout, url, hostname):
                             item, thread_num, response.status_code, response.text))
                     else:
                         # parse the response
-                        json_result = parse_solver_output(response.text)
-                        if "error" in json_result:
+                        dict_result = parse_solver_output(response.text)
+                        if "error" in dict_result:
                             logging.error(
                                 "Error {}. Thread {}. Wrong parse of answer {} in response <<<<< {} >>>>>".format(
-                                    item, thread_num, json_result["error"], response.text
+                                    item, thread_num, dict_result["error"], response.text
                                 ))
                         else:
-                            logging.debug("Parsed solution into json object {}".format(json.dumps(json_result)))
+                            logging.debug("Parsed solution into json object {}".format(json.dumps(dict_result)))
                             logging.debug("Update the DB for item {}".format(item))
                             cursor.execute(
                                 "INSERT or REPLACE INTO results(id,solvers,timeout,date,output) VALUES (?,?,?,?,?)", (
-                                    id,
+                                    hash_id,
                                     item[SOL_ID],
                                     timeout,
                                     datetime.datetime.now(),
-                                    json.dumps(json_result)))
+                                    json.dumps(dict_result)))
                             connection.commit()
-                            logging.info("OK {}|{}".format(item, id))
+                            logging.info("OK {}|{}".format(item, hash_id))
                 else:
                     logging.error("ERROR {}. Thread {}. Request not well formed".format(item, thread_num, item[DZN_ID]))
-            except requests.exceptions.RequestException as e:
-                logging.critical("Error {}. Thread {}. Connection request exception {}".format(
-                    item, thread_num, e))
-                time.sleep(SLEEP_TIME_AFTER_ERROR)
             except requests.exceptions.ConnectionError as e:
                 logging.error("Error {}. Thread {}. Connection error {}".format(
+                    item, thread_num, e))
+                time.sleep(SLEEP_TIME_AFTER_ERROR)
+            except requests.exceptions.RequestException as e:
+                logging.critical("Error {}. Thread {}. Connection request exception {}".format(
                     item, thread_num, e))
                 time.sleep(SLEEP_TIME_AFTER_ERROR)
             finally:
@@ -399,9 +398,9 @@ def send_jobs(server_url,
               request_file,
               database_file,
               timeout):
-    '''
+    """
     Solve the instances remotely and update the DB
-    '''
+    """
 
     # Open database
     if os.path.exists(database_file):
@@ -487,9 +486,9 @@ def generate_kb_files(
         info_file,
         feature_file,
         timeout):
-    '''
+    """
     Export the database into sunny KB input
-    '''
+    """
 
     connection = sqlite3.connect(database_file)
     cursor = connection.cursor()
@@ -501,30 +500,30 @@ def generate_kb_files(
     logging.info("Processed {} instances".format(len(instance_type)))
 
     logging.info("Start to create the info_file")
-    with open(info_file, 'wb') as f:
-        for (id, solvers, timeout_inst, output) in cursor.execute("SELECT id,solvers,timeout,output FROM results", ()):
+    with open(info_file, 'w') as f:
+        for (_id, solvers, timeout_inst, output) in cursor.execute("SELECT id,solvers,timeout,output FROM results", ()):
             # instance id not found in table
-            if id not in instance_type:
-                logging.warning("Id {} not found. Result ignored".format(id))
+            if _id not in instance_type:
+                logging.warning("Id {} not found. Result ignored".format(_id))
                 continue
             result = json.loads(output)
 
             # timeout too low
             if timeout > timeout_inst and (result["time"] <= 0 or result["time"] > timeout):
                 logging.warning("Timeout {} for instance {} and solvers {} is not enough. Ignored".format(
-                    timeout_inst, id, solvers))
+                    timeout_inst, _id, solvers))
                 continue
 
             # solver ended up in error
             if result["result"] == "unk" and result["time"] > 0:
-                logging.warning("Erronous execution for instance {} and solvers {}. Ignored".format(
-                    id, solvers))
+                logging.warning("Erroneous execution for instance {} and solvers {}. Ignored".format(
+                    _id, solvers))
                 continue
 
             # timeout too big
             if result["time"] > timeout or result["time"] <= 0:
                 result["time"] = timeout
-                if instance_type[id] == "sat":
+                if instance_type[_id] == "sat":
                     result["result"] = "unk"
                 else:  # min or max problem
                     result["solutions"] = {float(i): result["solutions"][i] for i in result["solutions"]
@@ -537,15 +536,15 @@ def generate_kb_files(
                         else:
                             result["result"] = "unk"
             # update time and solutions
-            if instance_type[id] == "sat":
+            if instance_type[_id] == "sat":
                 result["solutions"] = {}
 
             # compute the val value with invariant goal = sat \/ info = unk \/ info = uns <==> val = nan
             result["val"] = "nan"
             if result["solutions"]:
-                if instance_type[id] == "min":
+                if instance_type[_id] == "min":
                     result["val"] = str(min(result["solutions"].values()))
-                elif instance_type[id] == "max":
+                elif instance_type[_id] == "max":
                     result["val"] = str(max(result["solutions"].values()))
 
             # discard the results where result is unknown
@@ -554,19 +553,19 @@ def generate_kb_files(
 
             # stucture: inst|solver|goal|answer|time|val|values
             f.write("{}|{}|{}|{}|{}|{}|{}\n".format(
-                id,
+                _id,
                 solvers,
-                instance_type[id],
+                instance_type[_id],
                 result["result"],
                 result["time"],
                 result["val"],
                 json.dumps(result["solutions"]).replace('"', '')
             ))
-            used_instances.add(id)
+            used_instances.add(_id)
 
     logging.info("Start to create the feature_file")
     instance_type = {}
-    with open(feature_file, 'wb') as f:
+    with open(feature_file, 'w') as f:
         for row in cursor.execute("SELECT id,features,type FROM instances", ()):
             if row[0] in used_instances:
                 # structure: inst|[f_1, ..., f_n]
@@ -620,7 +619,7 @@ def check_anomalies(
                     instances[i][0:2], j))
 
     # opt value is consistent
-    possible_erroneous_solvers = set([])
+    possible_erroneous_solvers = set()
     for i in results:
         if instances[i][2] == "sat":
             sat = [j for j in results[i] if results[i][j]["result"] == "sat"]
