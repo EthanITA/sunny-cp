@@ -1,3 +1,10 @@
+# ./src/defaults.py
+## modifiche
+- concatenazione string in f-string
+- utilizzo di `with` per aprire file
+- semplificazione per generare `DEF_PFOLIO`
+
+
 # ./src/combinations.py
 ## modifiche 
 ### binom():

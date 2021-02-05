@@ -2,8 +2,9 @@
 Default settings for sunny-cp parameters.
 '''
 
-from multiprocessing import cpu_count
 import os
+from multiprocessing import cpu_count
+
 SUNNY_HOME = os.path.realpath(__file__).split('/')[:-2]
 SUNNY_HOME = '/'.join(SUNNY_HOME)
 
@@ -11,27 +12,24 @@ DEF_K = -1
 
 DEF_TOUT = 1200
 
-DEF_PFOLIO = []
-pfolio_solvers = open(SUNNY_HOME + '/src/pfolio_solvers.py')
-for row in pfolio_solvers:
-  if ' = Solver()' in row:
-    DEF_PFOLIO.append(row.split(' = ')[0])
+with open(f"{SUNNY_HOME}/src/pfolio_solvers.py") as pfolio_solvers:
+    DEF_PFOLIO = [row.split(' = ')[0] for row in pfolio_solvers if ' = Solver()' in row]
 
 DEF_BACKUP = 'chuffed'
 
 DEF_STATIC = []
 
-DEF_KB_CSP   = SUNNY_HOME + '/kb/empty/empty_csp'
-DEF_KB_COP   = SUNNY_HOME + '/kb/empty/empty_cop'
+DEF_KB_CSP = f"{SUNNY_HOME}/kb/empty/empty_csp"
+DEF_KB_COP = f"{SUNNY_HOME}/kb/empty/empty_cop"
 
-DEF_LIMS_CSP = SUNNY_HOME + '/kb/empty/empty_lims_csp'
-DEF_LIMS_COP = SUNNY_HOME + '/kb/empty/empty_lims_cop'
+DEF_LIMS_CSP = f"{SUNNY_HOME}/kb/empty/empty_lims_csp"
+DEF_LIMS_COP = f"{SUNNY_HOME}/kb/empty/empty_lims_cop"
 
 DEF_EXTRACTOR = 'mzn2feat'
 
 DEF_CORES = cpu_count()
 
-DEF_TMP_DIR = SUNNY_HOME + '/tmp'
+DEF_TMP_DIR = f"{SUNNY_HOME}/tmp"
 
 DEF_KEEP = False
 
