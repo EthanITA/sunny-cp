@@ -1,3 +1,9 @@
+# ./src/combinations.py
+## modifiche 
+### binom():
+- unito condizioni `n == k` e `k == 0`
+- `/` non torna più interi, rimpiazzato con `//`
+
 # ./kb/util/csv2kb.py
 ## modifiche
 - aggiunto `import sys`

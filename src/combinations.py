@@ -6,58 +6,60 @@ code draws inspiration from:
 
 """
 
+
 def binom(n, k):
-  """
-  Computes the binomial coefficient "n choose k"
-  """
-  if n < 0 or k < 0:
-    raise Exception("Error: Negative argument in binomial coefficient!")
-  if n < k:
-    return 0
-  if n == k:
-    return 1
-  if k == 0:
-    return 1
-  if k < n - k:
-    delta = n - k
-    iMax = k
-  else:
-    delta = k
-    iMax = n - k
-  ans = delta + 1
-  for i in range(2, iMax + 1):
-    ans = (ans * (delta + i)) / i
-  return ans
+    """
+    Computes the binomial coefficient "n choose k"
+    """
+    if n < 0 or k < 0:
+        raise Exception("Error: Negative argument in binomial coefficient!")
+    if n < k:
+        return 0
+    if n == k or k == 0:
+        return 1
+    if k < n - k:
+        delta = n - k
+        iMax = k
+    else:
+        delta = k
+        iMax = n - k
+    ans = delta + 1
+    for i in range(2, iMax + 1):
+        ans = (ans * (delta + i)) // i
+    return ans
+
 
 def largestV(a, b, x):
-  """
-  Helper function for get_subset
-  """
-  v = a - 1
-  while (binom(v, b) > x):
-    v -= 1
-  return v
+    """
+    Helper function for get_subset
+    """
+    v = a - 1
+    while binom(v, b) > x:
+        v -= 1
+    return v
+
 
 def get_subset(h, k, elements):
-  """
-  Returns the (h+1)-th element, w.r.t. the lexicographic ordering, among all the
-  subsets of elements having cardinality k.
-  """
-  n = len(elements)
-  maxM = binom(n, k) - 1
-  ans = [0] * k
-  a = n
-  b = k
-  # x is the "dual" of h.
-  x = maxM - h
-  for i in range(0, k):
-    ans[i] = largestV(a, b, x)
-    x = x - binom(ans[i], b)
-    a = ans[i]
-    b = b - 1
-  for i in range(0, k):
-    ans[i] = elements[(n - 1) - ans[i]];
-  return ans
+    """
+    Returns the (h+1)-th element, w.r.t. the lexicographic ordering, among all the
+    subsets of elements having cardinality k.
+    """
+    n = len(elements)
+    maxM = binom(n, k) - 1
+    ans = [0] * k
+    a = n
+    b = k
+    # x is the "dual" of h.
+    x = maxM - h
+    for i in range(0, k):
+        ans[i] = largestV(a, b, x)
+        x = x - binom(ans[i], b)
+        a = ans[i]
+        b = b - 1
+    for i in range(0, k):
+        ans[i] = elements[(n - 1) - ans[i]]
+    return ans
+
 
 '''
 # Dummy testing.
