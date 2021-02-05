@@ -1,4 +1,15 @@
-# job_dispatcher.py
+# ./solvers/make_pfolio
+## Modifiche
+- `open(pfolio_path, 'w')` non viene chiuso
+- gli `Iterator` non hanno più metodi `next()` 
+- concatenazione di `str()` tradotti in `f-string` per leggibilità e performance
+- `out` in byte convertito in `str()` 
+- inline variabile (riga 57)
+- `open("../opts", 'r')` non viene chiuso
+## Possibili problemi
+- `pfolio_solvers.py` generato da `make_pfolio.py`, importa `solver` che è anche una libreria (installabile) di Python
+---
+# ./job_dispatcher/job_dispatcher.py
 ## Modifiche
 ### get_hash_id():
 - `h.update()` ora serve un byte-object like, invece di str
