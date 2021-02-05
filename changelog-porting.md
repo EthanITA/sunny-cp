@@ -1,4 +1,10 @@
 
+# ./src/problem.py
+## modifiche
+### __ init __()
+- convertito in operatore ternario per l'assegnamento `self.best_bound`
+### bound_worse_than() e bound_better_than():
+- rimossi `\` nelle condizioni all'interno delle parentesi
 # ./src/features.py
 ## modifiche
 ### extract()
