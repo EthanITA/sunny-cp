@@ -1,3 +1,10 @@
+
+# ./src/features.py
+## modifiche
+### extract()
+- concatenazione string in f-string
+- inlining e semplificazione list comprehension `[float(f) for f in features]`
+
 # ./src/defaults.py
 ## modifiche
 - concatenazione string in f-string
