@@ -1,4 +1,4 @@
-'''
+"""
 csv2kb: builds a knowledge base starting from corresponding CSV files.
 
 Usage: python csv2kb.py [OPTIONS] <KB_NAME> <FEAT_FILE> <INFO_FILE>
@@ -38,9 +38,10 @@ Options:
 
   --no-check
     Not performs consistency checks.
-'''
+"""
 
 import getopt
+import sys
 import traceback
 
 from helper_kb import *
@@ -104,20 +105,20 @@ def main(args):
             if lb_feat >= ub_feat:
                 print('Error! Bound', l, 'not greater than', u, file=sys.stderr)
                 sys.exit(2)
-        elif o == '-s':
-            l, u = a.split(',')
-            lb_score = float(l)
-            ub_score = float(u)
-            if not (0 <= lb_score < ub_score <= 1):
-                print('Error! Must be 0 <=', l, '<', u, '<= 1', file=sys.stderr)
-                sys.exit(2)
-        elif o == '-a':
-            l, u = a.split(',')
-            lb_area = float(l)
-            ub_area = float(u)
-            if not (0 <= lb_area < ub_area <= 1):
-                print('Error! Must be 0 <=', l, '<', u, '<= 1', file=sys.stderr)
-                sys.exit(2)
+            elif o == '-s':
+                l, u = a.split(',')
+                lb_score = float(l)
+                ub_score = float(u)
+                if not (0 <= lb_score < ub_score <= 1):
+                    print('Error! Must be 0 <=', l, '<', u, '<= 1', file=sys.stderr)
+                    sys.exit(2)
+            elif o == '-a':
+                l, u = a.split(',')
+                lb_area = float(l)
+                ub_area = float(u)
+                if not (0 <= lb_area < ub_area <= 1):
+                    print('Error! Must be 0 <=', l, '<', u, '<= 1', file=sys.stderr)
+                    sys.exit(2)
         elif o == '--no-scale':
             scale = False
         elif o == '--no-const':
@@ -125,7 +126,7 @@ def main(args):
         elif o == '--no-check':
             check = False
 
-    kb_path = path + '/' + kb_name
+    kb_path = f"{path}/{kb_name}"
     if os.path.exists(kb_path):
         print('Error! Folder', kb_path, 'already exists! Choose ', end=' ', file=sys.stderr)
         print('another name or location for the knowledge base!', file=sys.stderr)

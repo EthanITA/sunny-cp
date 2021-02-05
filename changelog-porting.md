@@ -1,3 +1,9 @@
+# ./kb/util/csv2kb.py
+## modifiche
+- aggiunto `import sys`
+- unito codice duplicato per casi `o == '-s'` e `o == '-a'`
+- `kb_path` concatenazione string in f-string
+
 # ./kb/util/helper_kb.py
 ## Modifiche
 ### compute_infos():
