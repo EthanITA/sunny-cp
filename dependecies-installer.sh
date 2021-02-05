@@ -2,8 +2,8 @@
 
 # packages
 sudo apt update
-sudo apt install -y python3 flex bison minizinc
-
+sudo apt install -y python3 flex bison
+#
 # python libraries
 pip install -r requirements.txt
 
