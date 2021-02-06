@@ -28,15 +28,15 @@ class MyServer(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        '''
+        """
         Handle GET requests.
-        '''
-        logging.debug('GET %s' % (self.path))
+        """
+        logging.debug('GET %s' % self.path)
         if urllib.parse.urlparse(self.path).path == "/solvers":
             self._set_headers()
             solvers_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, "solvers")
             solvers = [name for name in os.listdir(solvers_path) if os.path.isdir(os.path.join(solvers_path, name))]
-            self.wfile.write("{}\n".format(",".join(solvers)))
+            self.wfile.write("{}\n".format(",".join(solvers)).encode("utf-8"))
         else:
             self.send_response(400)
             self.send_header('Content-type', 'text/plain')
@@ -45,13 +45,11 @@ class MyServer(BaseHTTPRequestHandler):
     def do_HEAD(self):
         self._set_headers()
 
-    # def do_POST(self):
-
     def do_POST(self):
-        '''
+        """
         Handle POST requests.
-        '''
-        logging.debug('POST %s' % (self.path))
+        """
+        logging.debug('POST %s' % self.path)
 
         # CITATION: http://stackoverflow.com/questions/4233218/python-basehttprequesthandler-post-variables
         ctype, pdict = cgi.parse_header(self.headers['content-type'])
@@ -76,16 +74,16 @@ class MyServer(BaseHTTPRequestHandler):
             dzn = []
             extra_param = []
             for i in postvars:
-                if i.startswith('mzn'):
+                if i.startswith('mzn'.encode("utf-8")):
                     logging.debug("Found mzn input file")
                     file_id, name = tempfile.mkstemp(suffix='.mzn', text=True)
-                    os.write(file_id, ''.join(postvars[i]))
+                    os.write(file_id, ''.join(postvars[i]).encode("utf-8"))
                     os.close(file_id)
                     mzn.append(name)
-                elif i.startswith('dzn'):
+                elif i.startswith('dzn'.encode("utf-8")):
                     logging.debug("Found dzn input file")
                     file_id, name = tempfile.mkstemp(suffix='.dzn', text=True)
-                    os.write(file_id, ''.join(postvars[i]))
+                    os.write(file_id, ''.join(postvars[i]).encode("utf-8"))
                     os.close(file_id)
                     dzn.append(name)
                 else:
@@ -93,7 +91,7 @@ class MyServer(BaseHTTPRequestHandler):
                         self.send_response(400)
                         self.send_header('Content-type', 'text/plain')
                         self.end_headers()
-                        self.wfile.write("Parameter %s badly formatted" % i)
+                        self.wfile.write(("Parameter %s badly formatted" % i).encode("utf-8"))
                         return
                     if postvars[i][0] == "":
                         logging.debug("Found flag %s" % i)
@@ -118,6 +116,7 @@ class MyServer(BaseHTTPRequestHandler):
                     cmd += ["-d", i]
 
             logging.debug('Running cmd {}'.format(cmd))
+            process = None
             try:
                 process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 out, err = process.communicate()
@@ -141,7 +140,7 @@ class MyServer(BaseHTTPRequestHandler):
                     if os.path.exists(i):
                         os.remove(i)
                 # stop process in case of errors
-                if process.poll() == None:
+                if process is not None and process.poll() is None:
                     process.kill()
         else:
             self.send_response(400)

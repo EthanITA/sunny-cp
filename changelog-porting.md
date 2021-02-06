@@ -1,3 +1,12 @@
+# ./src/sunny_server.py
+## modifiche
+### do_GET()
+- self.wfile.write() parametro attuale convertito in bytes()
+    
+    https://stackoverflow.com/questions/7646657/writing-response-body-with-basehttprequesthandler
+### do_POST()
+- varie stringhe convertite in bytes per operazioni di scrittura in binario
+- `process` viene inizializzata nel blocco `try`, potrebbe non essere inizializzata
 # ./src/solver.py
 ## modifiche
 ### RunningSolver
