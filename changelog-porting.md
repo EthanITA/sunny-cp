@@ -1,4 +1,39 @@
 
+# ./src/scheduling.py
+## modifiche
+### get_neighbours(): 
+- `feat_vectors` e `sorted_dist` variabili mai utilizzate
+- espressione per generare il dizionario di ritorno semplificato (nel `return`)
+### euclidean_distance():
+- resa l'espressione per calcolare la distanza più "matematica" 
+### sunny_csp():
+- il for per inizializzare `solved` e `times` si può farlo inline
+- conversione in `list()` inutile di `neighbours.items()` nel statement del for
+- convertitio `eval()` in `ast.literal_eval()`
+- `old_pfolio = best_pfolio`, `old_pfolio` ha lo stesso oggetto di `best_pfolio`! Per evitare effetti non voluti è stato utilizzato uno shallow copy(in questo specifico caso il riferimento di `best_pfolio` a quell'oggetto viene aggiornato, quindi non crea problemi).
+- conversione inutile da `[]` a `set()`
+- `round(timeout / n * ns)` inutile in quanto `timeout`, `n` e `ns` sono interi (in python 2 la diviosne fra interi restituisce un intero), per ottenere lo stesso comportamento basta utilizzare l'operatore `//` di python 3
+- tolto `round()` di `tot_time` perchè è una somma di interi
+- `backup in list(schedule.keys())` fa operazioni ridondanti, basta `backup in schedule` per vedere se `backup` è una chiave di `schedule`
+### sunny_cop()
+- for di inizializzazione inline
+- conversione inutile
+- `old_pfolio = best_pfolio`, `old_pfolio` ha lo stesso oggetto di `best_pfolio`! Per evitare effetti non voluti è stato utilizzato uno shallow copy(in questo specifico caso non crea problemi, il riferimento di `best_pfolio` a quell'oggetto viene aggiornato).
+- rimosso definizioni inutili di `time` e `area`
+- `port_scores` semplificato
+- operazione ridondante (riga 160)
+### parallelize()
+- conversione inutile
+- convertito `/` in `//` perchè è un'operazione fra interi
+
+## possibile problemi
+### get_neighbours(): 
+    round() built-in function
+    ---
+    PYTHON3: rounding is done toward the even choice (so, for example, both round(0.5) and round(-0.5) are 0, and round(1.5) is 2)
+    ---
+    PYTHON2: rounding is done away from 0 (so, for example, round(0.5) is 1.0 and round(-0.5) is -1.0).
+
 # ./src/problem.py
 ## modifiche
 ### __ init __()
