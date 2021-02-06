@@ -168,325 +168,328 @@ Helper Options
     is ignored if the problem is a COP.
 '''
 
-import sys
 import getopt
+import sys
 from socket import gethostname
-from defaults       import *
-from features       import *
-from problem        import *
+
+from defaults import *
+from features import *
 from pfolio_solvers import *
+from problem import *
+
 
 def parse_arguments(args):
-  """
-  Parse the options specified by the user and returns the corresponding
-  arguments properly set.
-  """
+    """
+    Parse the options specified by the user and returns the corresponding
+    arguments properly set.
+    """
 
-  # Get the arguments and parse the input model to get solve information.
-  pfolio = [k for k, v in globals().items() if isinstance(v, Solver)]
-  mzn, dzn, opts = get_args(args, pfolio)
-  solve = get_solve(mzn)
+    # Get the arguments and parse the input model to get solve information.
+    pfolio = [k for k, v in list(globals().items()) if isinstance(v, Solver)]
+    mzn, dzn, opts = get_args(args, pfolio)
+    solve = get_solve(mzn)
 
-  # Initialize variables with the default values.
-  k = DEF_K
-  check = DEF_CHECK
-  timeout= DEF_TOUT
-  backup = DEF_BACKUP
-  static = DEF_STATIC
-  extractor = eval(DEF_EXTRACTOR)
-  cores = DEF_CORES
-  tmp_dir = DEF_TMP_DIR
-  keep = DEF_KEEP
-  mem_limit = DEF_MEM_LIMIT
-  all_opt = DEF_ALL
-  free_opt = DEF_FREE
-  lb = DEF_LB
-  ub = DEF_UB
-  solver_options = dict((s, {
-    'options': DEF_OPTS,
-    'wait_time': DEF_WAIT_TIME,
-    'restart_time': DEF_RESTART_TIME,
-    'switch_search': DEF_SWITCH,
-    'max_restarts': DEF_RESTARTS
-  }) for s in pfolio)
-  if solve == 'sat':
-    kb = DEF_KB_CSP
-    lims = DEF_LIMS_CSP
-  else:
-    kb = DEF_KB_COP
-    lims = DEF_LIMS_COP
-  pfolio = DEF_PFOLIO
+    # Initialize variables with the default values.
+    k = DEF_K
+    check = DEF_CHECK
+    timeout = DEF_TOUT
+    backup = DEF_BACKUP
+    static = DEF_STATIC
+    extractor = eval(DEF_EXTRACTOR)
+    cores = DEF_CORES
+    tmp_dir = DEF_TMP_DIR
+    keep = DEF_KEEP
+    mem_limit = DEF_MEM_LIMIT
+    all_opt = DEF_ALL
+    free_opt = DEF_FREE
+    lb = DEF_LB
+    ub = DEF_UB
+    solver_options = dict((s, {
+        'options': DEF_OPTS,
+        'wait_time': DEF_WAIT_TIME,
+        'restart_time': DEF_RESTART_TIME,
+        'switch_search': DEF_SWITCH,
+        'max_restarts': DEF_RESTARTS
+    }) for s in pfolio)
+    if solve == 'sat':
+        kb = DEF_KB_CSP
+        lims = DEF_LIMS_CSP
+    else:
+        kb = DEF_KB_COP
+        lims = DEF_LIMS_COP
+    pfolio = DEF_PFOLIO
 
-  # Arguments parsing.
-  for o, a in opts:
-    if o in ('-h', '--help'):
-      print __doc__
-      sys.exit(0)
-    elif o == '-P':
-      pfolio = a.split(',')
-      if not pfolio:
-        print >> sys.stderr, 'Error! Empty portfolio '
-        print >> sys.stderr, 'For help use --help'
-        sys.exit(2)
-    elif o == '-A':
-      solvers = a.split(',')
-      pfolio += [s for s in solvers if s not in pfolio]
-    elif o == '-R':
-      solvers = a.split(',')
-      pfolio = [s for s in pfolio if s not in solvers]
-    elif o == '-p':
-      n = int(a)
-      if n < 1:
-        print >> sys.stderr, 'Warning: -p parameter set to 1.'
-        cores = 1
-      else:
-        cores = n
-    elif o == '-e':
-      extractor = eval(a)
-    elif o == '-k':
-      k = int(a)
-      if k < 0:
-        print >> sys.stderr, 'Error! Negative value ' + a + ' for k value.'
-        print >> sys.stderr, 'For help use --help'
-        sys.exit(2)
-    elif o == '-T':
-      timeout = float(a)
-      if timeout<= 0:
-        print >> sys.stderr, 'Error! Non-positive value ' + a + ' for timeout.'
-        print >> sys.stderr, 'For help use --help'
-        sys.exit(2)
-    elif o == '-b':
-      backup = a
-    elif o == '-K':
-      if not os.path.exists(a):
-        print >> sys.stderr, 'Error! Directory ' + a + ' not exists.'
-        print >> sys.stderr, 'For help use --help'
-        sys.exit(2)
-      name = [token for token in a.split('/') if token][-1]
-      if a[-1] != '/':
-        path = a + '/'
-      else:
-        path = a
-      if solve in ['min', 'max']:
-        pb = 'cop'
-      else:
-        pb = 'csp'
-      kb = path + name + '_' + pb
-      lims = path + name + '_lims_' + pb
-      if not os.path.exists(kb):
-        print >> sys.stderr, 'Error! File ' + kb + ' not exists.'
-        print >> sys.stderr, 'For help use --help'
-        sys.exit(2)
-      if not os.path.exists(lims):
-        print >> sys.stderr, 'Error! File ' + lims + ' not exists.'
-        print >> sys.stderr, 'For help use --help'
-        sys.exit(2)
-    elif o == '-s':
-      s = a.split(',')
-      for i in range(0, len(s) / 2):
-        solver = s[2 * i]
-        time = float(s[2 * i + 1])
-        if time < 0:
-          print >> sys.stderr, 'Error! Not acceptable negative time'
-          print >> sys.stderr, 'For help use --help'
-          sys.exit(2)
-        static.append((solver, time))
-    elif o == '-d':
-      if not os.path.exists(a):
-        print >> sys.stderr, 'Error! Directory ' + a + ' not exists.'
-        print >> sys.stderr, 'For help use --help'
-        sys.exit(2)
-      name = [token for token in a.split('/') if token][-1]
-      if a[-1] == '/':
-        tmp_dir = a[0 : -1]
-      else:
-        tmp_dir = a
-    elif o == '-m':
-      mem_limit = float(a)
-    elif o == '-a':
-      all_opt = True
-    elif o == '-f':
-      free_opt = True
-    elif o == '-l' and solve != 'sat':
-      lb = int(a)
-    elif o == '-u' and solve != 'sat':
-      ub = int(a)
-    elif o.startswith('--fzn-options'):
-      if len(o) > 13:
-        solver = o[14:]
-        solver_options[solver]['options'] += ' ' + a
-      else:
-        for item in solver_options.values():
-          item['options'] += ' ' + a
-    elif o.startswith('--wait-time'):
-      wait_time = float(a)
-      if wait_time < 0:
-        print >> sys.stderr, 'Error! Not acceptable negative time'
-        print >> sys.stderr, 'For help use --help'
-        sys.exit(2)
-      if len(o) > 11:
-        solver = o[12:]
-        solver_options[solver]['wait_time'] = wait_time
-      else:
-        for item in solver_options.values():
-          item['wait_time'] = wait_time
-    elif o.startswith('--restart-time'):
-      rest_time = float(a)
-      if rest_time < 0:
-        print >> sys.stderr, 'Error! Not acceptable negative time'
-        print >> sys.stderr, 'For help use --help'
-        sys.exit(2)
-      if len(o) > 14:
-        solver = o[15:]
-        solver_options[solver]['restart_time'] = rest_time
-      else:
-        for item in solver_options.values():
-          item['restart_time'] = rest_time
-    elif o.startswith('--switch-search'):
-      if len(o) > 15:
-        solver = o[16:]
-        solver_options[solver]['switch_search'] = True
-      else:
-        for item in solver_options.values():
-          item['switch_search'] = True
-    elif o.startswith('--max-restarts'):
-      if len(o) > 14:
-        solver = o[15:]
-        solver_options[solver]['max_restarts'] = int(a)
-      else:
-        for item in solver_options.values():
-          item['max_restarts'] = int(a)
-    elif o == '--keep':
-      keep = True
-    elif o == '--mzn':
-      pfolio = ['chuffed', 'gecode']
-      backup = 'chuffed'
-    elif o == '--check-solvers':
-      s = a.split(',')
-      for i in range(0, len(s) / 2):
-        unt = s[2 * i]
-        tru = s[2 * i + 1]
-        if unt == tru:
-          print >> sys.stderr, 'Error! A solver is either trusted or untrusted!'
-          print >> sys.stderr, 'For help use --help'
-          sys.exit(2)
-        check[unt] = tru
-    elif o.startswith('--csp-') and solve == 'sat' or \
-         o.startswith('--cop-') and solve != 'sat':
-           if len(o) == 7:
-             opts.append(['-' + o[6], a])
-           else:
-             opts.append(['--' + o[6:], a])
+    # Arguments parsing.
+    for o, a in opts:
+        if o in ('-h', '--help'):
+            print(__doc__)
+            sys.exit(0)
+        elif o == '-P':
+            pfolio = a.split(',')
+            if not pfolio:
+                print('Error! Empty portfolio ', file=sys.stderr)
+                print('For help use --help', file=sys.stderr)
+                sys.exit(2)
+        elif o == '-A':
+            solvers = a.split(',')
+            pfolio += [s for s in solvers if s not in pfolio]
+        elif o == '-R':
+            solvers = a.split(',')
+            pfolio = [s for s in pfolio if s not in solvers]
+        elif o == '-p':
+            n = int(a)
+            if n < 1:
+                print('Warning: -p parameter set to 1.', file=sys.stderr)
+                cores = 1
+            else:
+                cores = n
+        elif o == '-e':
+            extractor = eval(a)
+        elif o == '-k':
+            k = int(a)
+            if k < 0:
+                print('Error! Negative value ' + a + ' for k value.', file=sys.stderr)
+                print('For help use --help', file=sys.stderr)
+                sys.exit(2)
+        elif o == '-T':
+            timeout = float(a)
+            if timeout <= 0:
+                print('Error! Non-positive value ' + a + ' for timeout.', file=sys.stderr)
+                print('For help use --help', file=sys.stderr)
+                sys.exit(2)
+        elif o == '-b':
+            backup = a
+        elif o == '-K':
+            if not os.path.exists(a):
+                print('Error! Directory ' + a + ' not exists.', file=sys.stderr)
+                print('For help use --help', file=sys.stderr)
+                sys.exit(2)
+            name = [token for token in a.split('/') if token][-1]
+            if a[-1] != '/':
+                path = a + '/'
+            else:
+                path = a
+            if solve in ['min', 'max']:
+                pb = 'cop'
+            else:
+                pb = 'csp'
+            kb = path + name + '_' + pb
+            lims = path + name + '_lims_' + pb
+            if not os.path.exists(kb):
+                print('Error! File ' + kb + ' not exists.', file=sys.stderr)
+                print('For help use --help', file=sys.stderr)
+                sys.exit(2)
+            if not os.path.exists(lims):
+                print('Error! File ' + lims + ' not exists.', file=sys.stderr)
+                print('For help use --help', file=sys.stderr)
+                sys.exit(2)
+        elif o == '-s':
+            s = a.split(',')
+            for i in range(0, len(s) / 2):
+                solver = s[2 * i]
+                time = float(s[2 * i + 1])
+                if time < 0:
+                    print('Error! Not acceptable negative time', file=sys.stderr)
+                    print('For help use --help', file=sys.stderr)
+                    sys.exit(2)
+                static.append((solver, time))
+        elif o == '-d':
+            if not os.path.exists(a):
+                print('Error! Directory ' + a + ' not exists.', file=sys.stderr)
+                print('For help use --help', file=sys.stderr)
+                sys.exit(2)
+            name = [token for token in a.split('/') if token][-1]
+            if a[-1] == '/':
+                tmp_dir = a[0: -1]
+            else:
+                tmp_dir = a
+        elif o == '-m':
+            mem_limit = float(a)
+        elif o == '-a':
+            all_opt = True
+        elif o == '-f':
+            free_opt = True
+        elif o == '-l' and solve != 'sat':
+            lb = int(a)
+        elif o == '-u' and solve != 'sat':
+            ub = int(a)
+        elif o.startswith('--fzn-options'):
+            if len(o) > 13:
+                solver = o[14:]
+                solver_options[solver]['options'] += ' ' + a
+            else:
+                for item in list(solver_options.values()):
+                    item['options'] += ' ' + a
+        elif o.startswith('--wait-time'):
+            wait_time = float(a)
+            if wait_time < 0:
+                print('Error! Not acceptable negative time', file=sys.stderr)
+                print('For help use --help', file=sys.stderr)
+                sys.exit(2)
+            if len(o) > 11:
+                solver = o[12:]
+                solver_options[solver]['wait_time'] = wait_time
+            else:
+                for item in list(solver_options.values()):
+                    item['wait_time'] = wait_time
+        elif o.startswith('--restart-time'):
+            rest_time = float(a)
+            if rest_time < 0:
+                print('Error! Not acceptable negative time', file=sys.stderr)
+                print('For help use --help', file=sys.stderr)
+                sys.exit(2)
+            if len(o) > 14:
+                solver = o[15:]
+                solver_options[solver]['restart_time'] = rest_time
+            else:
+                for item in list(solver_options.values()):
+                    item['restart_time'] = rest_time
+        elif o.startswith('--switch-search'):
+            if len(o) > 15:
+                solver = o[16:]
+                solver_options[solver]['switch_search'] = True
+            else:
+                for item in list(solver_options.values()):
+                    item['switch_search'] = True
+        elif o.startswith('--max-restarts'):
+            if len(o) > 14:
+                solver = o[15:]
+                solver_options[solver]['max_restarts'] = int(a)
+            else:
+                for item in list(solver_options.values()):
+                    item['max_restarts'] = int(a)
+        elif o == '--keep':
+            keep = True
+        elif o == '--mzn':
+            pfolio = ['chuffed', 'gecode']
+            backup = 'chuffed'
+        elif o == '--check-solvers':
+            s = a.split(',')
+            for i in range(0, len(s) / 2):
+                unt = s[2 * i]
+                tru = s[2 * i + 1]
+                if unt == tru:
+                    print('Error! A solver is either trusted or untrusted!', file=sys.stderr)
+                    print('For help use --help', file=sys.stderr)
+                    sys.exit(2)
+                check[unt] = tru
+        elif o.startswith('--csp-') and solve == 'sat' or \
+                o.startswith('--cop-') and solve != 'sat':
+            if len(o) == 7:
+                opts.append(['-' + o[6], a])
+            else:
+                opts.append(['--' + o[6:], a])
 
-  tmp_id = tmp_dir + '/' + gethostname() + '_' + str(os.getpid())
-  problem = Problem(mzn, dzn, tmp_id + '.ozn', solve)
-  return problem, k, timeout, pfolio, backup, kb, lims, static, extractor,     \
-    cores, solver_options, tmp_id, mem_limit, keep, all_opt, free_opt, lb, ub, \
-      check
+    tmp_id = tmp_dir + '/' + gethostname() + '_' + str(os.getpid())
+    problem = Problem(mzn, dzn, tmp_id + '.ozn', solve)
+    return problem, k, timeout, pfolio, backup, kb, lims, static, extractor, \
+           cores, solver_options, tmp_id, mem_limit, keep, all_opt, free_opt, lb, ub, \
+           check
+
 
 def get_args(args, pfolio):
-  """
-  Get the input arguments.
-  """
-  dzn = ''
-  try:
-    options = [
-      'P', 'R', 'A', 'T', 'k', 'b', 'K', 's', 'd', 'p', 'e', 'm', 'l', 'u'
-    ]
-    long_options  = ['fzn-options', 'wait-time', 'restart-time', 'max-restarts']
-    long_options += [
-      o + '-' + s for o in long_options for s in pfolio
-    ]
-    long_options += ['check-solvers']
-    csp_opts = ['csp-' + o + '=' for o in options + long_options]
-    cop_opts = ['cop-' + o + '=' for o in options + long_options]
-    csp_opts += ['csp-a', 'csp-f']
-    cop_opts += ['cop-a', 'cop-f']
-    long_options = [o + '=' for o in long_options]
-    long_noval  = ['switch-search', 'help', 'keep', 'mzn']
-    long_noval += ['switch-search-' + s for s in pfolio]
-    long_noval += ['csp-' + o for o in long_noval]
-    long_noval += ['cop-' + o for o in long_noval]
-    long_options += long_noval + csp_opts + cop_opts
-    opts, args = getopt.getopt(
-      args, 'hafT:k:b:K:s:d:p:e:x:m:l:u:P:R:A:', long_options
-    )
-  except getopt.error, msg:
-    print msg
-    print >> sys.stderr, 'For help use --help'
-    sys.exit(2)
+    """
+    Get the input arguments.
+    """
+    dzn = ''
+    try:
+        options = [
+            'P', 'R', 'A', 'T', 'k', 'b', 'K', 's', 'd', 'p', 'e', 'm', 'l', 'u'
+        ]
+        long_options = ['fzn-options', 'wait-time', 'restart-time', 'max-restarts']
+        long_options += [
+            o + '-' + s for o in long_options for s in pfolio
+        ]
+        long_options += ['check-solvers']
+        csp_opts = ['csp-' + o + '=' for o in options + long_options]
+        cop_opts = ['cop-' + o + '=' for o in options + long_options]
+        csp_opts += ['csp-a', 'csp-f']
+        cop_opts += ['cop-a', 'cop-f']
+        long_options = [o + '=' for o in long_options]
+        long_noval = ['switch-search', 'help', 'keep', 'mzn']
+        long_noval += ['switch-search-' + s for s in pfolio]
+        long_noval += ['csp-' + o for o in long_noval]
+        long_noval += ['cop-' + o for o in long_noval]
+        long_options += long_noval + csp_opts + cop_opts
+        opts, args = getopt.getopt(
+            args, 'hafT:k:b:K:s:d:p:e:x:m:l:u:P:R:A:', long_options
+        )
+    except getopt.error as msg:
+        print(msg)
+        print('For help use --help', file=sys.stderr)
+        sys.exit(2)
 
-  if len(args) == 0:
-    for o, a in opts:
-      if o in ('-h', '--help'):
-        print __doc__
-        sys.exit(0)
-    print >> sys.stderr, 'Error! No arguments given.'
-    print >> sys.stderr, 'For help use --help'
-    sys.exit(2)
-  mzn = args[0]
-  if not mzn.endswith('.mzn'):
-    print >> sys.stderr, 'Error! MiniZinc input model must have .mzn extension.'
-    print >> sys.stderr, 'For help use --help'
-    sys.exit(2)
-  if len(args) > 1:
-    dzn = args[1]
-    if not dzn.endswith('.dzn'):
-      print >> sys.stderr, \
-      'Error! MiniZinc input data must have .dzn extension.'
-      print >> sys.stderr, 'For help use --help'
-      sys.exit(2)
-  return mzn, dzn, opts
+    if len(args) == 0:
+        for o, a in opts:
+            if o in ('-h', '--help'):
+                print(__doc__)
+                sys.exit(0)
+        print('Error! No arguments given.', file=sys.stderr)
+        print('For help use --help', file=sys.stderr)
+        sys.exit(2)
+    mzn = args[0]
+    if not mzn.endswith('.mzn'):
+        print('Error! MiniZinc input model must have .mzn extension.', file=sys.stderr)
+        print('For help use --help', file=sys.stderr)
+        sys.exit(2)
+    if len(args) > 1:
+        dzn = args[1]
+        if not dzn.endswith('.dzn'):
+            print('Error! MiniZinc input data must have .dzn extension.', file=sys.stderr)
+            print('For help use --help', file=sys.stderr)
+            sys.exit(2)
+    return mzn, dzn, opts
+
 
 def get_solve(mzn):
-  """
-  Return 'sat', 'min', or 'max' for satisfaction, minimization, or maximization
-  problems respectively.
-  """
-  solve = 'sat'
-  include_list = [mzn]
-  mzn_dir = os.path.dirname(mzn)
+    """
+    Return 'sat', 'min', or 'max' for satisfaction, minimization, or maximization
+    problems respectively.
+    """
+    solve = 'sat'
+    include_list = [mzn]
+    mzn_dir = os.path.dirname(mzn)
 
-  # Loop for extracting the solve item.
-  while include_list:
-    model = include_list.pop()
-    if os.path.exists(model):
-      lines = open(model, 'r').read().split(';')
-    elif os.path.exists(mzn_dir + '/' + model):
-      model = mzn_dir + '/' + model
-      lines = open(model, 'r').read().split(';')
-    else:
-      continue
-    for line in lines:
-      include = False
-      new_line = ''
-      ignore = False
-      for l in line:
-        # Ignore comments.
-        if ignore or l == '%':
-          ignore = True
-          if l == '\n':
-            ignore = False
+    # Loop for extracting the solve item.
+    while include_list:
+        model = include_list.pop()
+        if os.path.exists(model):
+            lines = open(model, 'r').read().split(';')
+        elif os.path.exists(mzn_dir + '/' + model):
+            model = mzn_dir + '/' + model
+            lines = open(model, 'r').read().split(';')
         else:
-          new_line += l
-      tokens = new_line.split()
-      for token in tokens:
-        if token == 'include' or token == 'include"':
-          include = True
-        # Looking for included models.
-        if include and token[-1] == '"' or token[-1] == '";':
-          include = \
-            token.replace('include"', '').replace('"', '').replace("'", '')
-          include_list.append(include)
-          include = False
-        elif token.endswith('satisfy'):
-          include_list = []
-          break
-        elif token in ['minimize', 'maximize']:
-          if token == 'minimize':
-            solve = 'min'
-          else:
-            solve = 'max'
-          include_list = []
-          break
-  return solve
+            continue
+        for line in lines:
+            include = False
+            new_line = ''
+            ignore = False
+            for l in line:
+                # Ignore comments.
+                if ignore or l == '%':
+                    ignore = True
+                    if l == '\n':
+                        ignore = False
+                else:
+                    new_line += l
+            tokens = new_line.split()
+            for token in tokens:
+                if token == 'include' or token == 'include"':
+                    include = True
+                # Looking for included models.
+                if include and token[-1] == '"' or token[-1] == '";':
+                    include = \
+                        token.replace('include"', '').replace('"', '').replace("'", '')
+                    include_list.append(include)
+                    include = False
+                elif token.endswith('satisfy'):
+                    include_list = []
+                    break
+                elif token in ['minimize', 'maximize']:
+                    if token == 'minimize':
+                        solve = 'min'
+                    else:
+                        solve = 'max'
+                    include_list = []
+                    break
+    return solve
