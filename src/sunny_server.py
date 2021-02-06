@@ -5,13 +5,14 @@ Examples for sending requests:
     curl -F "--help=" http://localhost:9001
     curl -F "-P=gecode" "mzn=@<FILE>" http://localhost:9001
 """
-from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
-import urlparse
-import logging
 import cgi
-import tempfile
+import logging
 import os
 import subprocess
+import tempfile
+import urllib.parse
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
 import click
 
 # default timeout in seconds for sunny
@@ -31,9 +32,9 @@ class MyServer(BaseHTTPRequestHandler):
         Handle GET requests.
         '''
         logging.debug('GET %s' % (self.path))
-        if urlparse.urlparse(self.path).path == "/solvers":
+        if urllib.parse.urlparse(self.path).path == "/solvers":
             self._set_headers()
-            solvers_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),os.pardir,"solvers")
+            solvers_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, "solvers")
             solvers = [name for name in os.listdir(solvers_path) if os.path.isdir(os.path.join(solvers_path, name))]
             self.wfile.write("{}\n".format(",".join(solvers)))
         else:
@@ -43,7 +44,7 @@ class MyServer(BaseHTTPRequestHandler):
 
     def do_HEAD(self):
         self._set_headers()
-        
+
     # def do_POST(self):
 
     def do_POST(self):
@@ -58,18 +59,19 @@ class MyServer(BaseHTTPRequestHandler):
             postvars = cgi.parse_multipart(self.rfile, pdict)
         elif ctype == 'application/x-www-form-urlencoded':
             length = int(self.headers['content-length'])
-            postvars = urlparse.parse_qs(self.rfile.read(length))
+            postvars = urllib.parse.parse_qs(self.rfile.read(length))
         else:
             postvars = {}
 
         # query_values = urlparse.parse_qs(urlparse.urlparse(self.path).query)
 
-        logging.debug('Operation %s' % urlparse.urlparse(self.path).path)
+        logging.debug('Operation %s' % urllib.parse.urlparse(self.path).path)
         # logging.debug('Parameters %s' % unicode(query_values))
         # logging.debug('Post data %s' % unicode(postvars))
 
-        if urlparse.urlparse(self.path).path == "/process" or urlparse.urlparse(self.path).path == "/get_features":
-            timeout = unicode(TIMEOUT)
+        if urllib.parse.urlparse(self.path).path == "/process" or urllib.parse.urlparse(
+                self.path).path == "/get_features":
+            timeout = str(TIMEOUT)
             mzn = []
             dzn = []
             extra_param = []
@@ -77,7 +79,7 @@ class MyServer(BaseHTTPRequestHandler):
                 if i.startswith('mzn'):
                     logging.debug("Found mzn input file")
                     file_id, name = tempfile.mkstemp(suffix='.mzn', text=True)
-                    os. write(file_id,''.join(postvars[i]))
+                    os.write(file_id, ''.join(postvars[i]))
                     os.close(file_id)
                     mzn.append(name)
                 elif i.startswith('dzn'):
@@ -97,23 +99,23 @@ class MyServer(BaseHTTPRequestHandler):
                         logging.debug("Found flag %s" % i)
                         extra_param.append(i)
                     else:
-                        logging.debug("Found parameter %s with value %s" % (i,postvars[i]))
+                        logging.debug("Found parameter %s with value %s" % (i, postvars[i]))
                         if i == "-T":
                             if "inf" not in postvars[i][0]:
                                 timeout = postvars[i][0]
                         extra_param.append(i)
                         extra_param.append(postvars[i][0])
 
-            if urlparse.urlparse(self.path).path == "/process":
+            if urllib.parse.urlparse(self.path).path == "/process":
                 cmd = ["timeout", timeout, "sunny-cp"] + extra_param
                 cmd += mzn
                 cmd += dzn
             else:
                 cmd = ["timeout", timeout, "mzn2feat"] + extra_param
                 for i in mzn:
-                    cmd += ["-i",i]
+                    cmd += ["-i", i]
                 for i in dzn:
-                    cmd += ["-d",i]
+                    cmd += ["-d", i]
 
             logging.debug('Running cmd {}'.format(cmd))
             try:
@@ -121,7 +123,7 @@ class MyServer(BaseHTTPRequestHandler):
                 out, err = process.communicate()
                 if process.returncode != 0 and process.returncode != 124:
                     logging.debug("The command returned with return code {}. STDOUT <{}>. STDERR <{}>".format(
-                        process.returncode,out,err))
+                        process.returncode, out, err))
                     self.send_response(400)
                     self.send_header('Content-type', 'text/plain')
                     self.end_headers()
@@ -150,14 +152,16 @@ class MyServer(BaseHTTPRequestHandler):
 def run(server_class=HTTPServer, handler_class=MyServer, port=9001):
     server_address = ('', port)
     httpd = server_class(server_address, handler_class)
-    print 'Starting httpd...'
+    print('Starting httpd...')
     httpd.serve_forever()
+
 
 @click.command()
 @click.option('--port', '-p', type=click.INT, default=9001,
               help='Port used by the server to wait for requests.')
 def main(port):
     run(port=port)
+
 
 if __name__ == "__main__":
     main()
