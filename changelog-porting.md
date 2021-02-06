@@ -1,3 +1,20 @@
+# ./src/parsing.py 
+## modifiche
+### parse_arguments()
+- semplificato inizializzazione di `solver_options`
+- rimosse varie conversioni inutili da iteratori a liste 
+- varie conversione da concatenazione a f-string
+### get_solve()
+- varie conversione da concatenazione a f-string
+
+## NOTE
+### parse_arguments()
+- L'`eval()` per il caso `"-e"` non ho trovato modo di cambiarlo per via di come è stato definito, di conseguenza non ho toccato neppure `extractor = eval(DEF_EXTRACTOR)`
+    ```
+    -e <EXTRACTOR>
+    Feature extractor used by sunny-cp. By default is "mzn2feat", but it can be changed by defining a corresponding class in src/features.py.
+    ```
+
 # ./src/sunny_server.py
 ## modifiche
 ### do_GET()

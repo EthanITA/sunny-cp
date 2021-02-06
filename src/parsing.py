@@ -1,4 +1,4 @@
-'''
+"""
 sunny-cp: a parallel CP portfolio solver.
 
 sunny-cp is a parallel portfolio solver able to solve a Constraint Satisfaction/
@@ -166,7 +166,7 @@ Helper Options
     that the '-' character of <OPTION> must be omitted. For example, --cop-T 900
     set the T parameter to 900 only if the problem is a COP, while such option
     is ignored if the problem is a COP.
-'''
+"""
 
 import getopt
 import sys
@@ -185,7 +185,7 @@ def parse_arguments(args):
     """
 
     # Get the arguments and parse the input model to get solve information.
-    pfolio = [k for k, v in list(globals().items()) if isinstance(v, Solver)]
+    pfolio = [k for k, v in globals().items() if isinstance(v, Solver)]
     mzn, dzn, opts = get_args(args, pfolio)
     solve = get_solve(mzn)
 
@@ -204,13 +204,13 @@ def parse_arguments(args):
     free_opt = DEF_FREE
     lb = DEF_LB
     ub = DEF_UB
-    solver_options = dict((s, {
+    solver_options = {s: {
         'options': DEF_OPTS,
         'wait_time': DEF_WAIT_TIME,
         'restart_time': DEF_RESTART_TIME,
         'switch_search': DEF_SWITCH,
         'max_restarts': DEF_RESTARTS
-    }) for s in pfolio)
+    } for s in pfolio}
     if solve == 'sat':
         kb = DEF_KB_CSP
         lims = DEF_LIMS_CSP
@@ -248,44 +248,44 @@ def parse_arguments(args):
         elif o == '-k':
             k = int(a)
             if k < 0:
-                print('Error! Negative value ' + a + ' for k value.', file=sys.stderr)
+                print(f'Error! Negative value {a} for k value.', file=sys.stderr)
                 print('For help use --help', file=sys.stderr)
                 sys.exit(2)
         elif o == '-T':
             timeout = float(a)
             if timeout <= 0:
-                print('Error! Non-positive value ' + a + ' for timeout.', file=sys.stderr)
+                print(f'Error! Non-positive value {a} for timeout.', file=sys.stderr)
                 print('For help use --help', file=sys.stderr)
                 sys.exit(2)
         elif o == '-b':
             backup = a
         elif o == '-K':
             if not os.path.exists(a):
-                print('Error! Directory ' + a + ' not exists.', file=sys.stderr)
+                print(f'Error! Directory {a} not exists.', file=sys.stderr)
                 print('For help use --help', file=sys.stderr)
                 sys.exit(2)
             name = [token for token in a.split('/') if token][-1]
             if a[-1] != '/':
-                path = a + '/'
+                path = f"{a}/"
             else:
                 path = a
             if solve in ['min', 'max']:
                 pb = 'cop'
             else:
                 pb = 'csp'
-            kb = path + name + '_' + pb
-            lims = path + name + '_lims_' + pb
+            kb = f"{path}{name}_{pb}"
+            lims = f"{path}{name}_lims_{pb}"
             if not os.path.exists(kb):
-                print('Error! File ' + kb + ' not exists.', file=sys.stderr)
+                print(f'Error! File {kb} not exists.', file=sys.stderr)
                 print('For help use --help', file=sys.stderr)
                 sys.exit(2)
             if not os.path.exists(lims):
-                print('Error! File ' + lims + ' not exists.', file=sys.stderr)
+                print(f'Error! File {lims} not exists.', file=sys.stderr)
                 print('For help use --help', file=sys.stderr)
                 sys.exit(2)
         elif o == '-s':
             s = a.split(',')
-            for i in range(0, len(s) / 2):
+            for i in range(0, len(s) // 2):
                 solver = s[2 * i]
                 time = float(s[2 * i + 1])
                 if time < 0:
@@ -295,12 +295,12 @@ def parse_arguments(args):
                 static.append((solver, time))
         elif o == '-d':
             if not os.path.exists(a):
-                print('Error! Directory ' + a + ' not exists.', file=sys.stderr)
+                print(f'Error! Directory {a} not exists.', file=sys.stderr)
                 print('For help use --help', file=sys.stderr)
                 sys.exit(2)
             name = [token for token in a.split('/') if token][-1]
             if a[-1] == '/':
-                tmp_dir = a[0: -1]
+                tmp_dir = a[: -1]
             else:
                 tmp_dir = a
         elif o == '-m':
@@ -316,10 +316,10 @@ def parse_arguments(args):
         elif o.startswith('--fzn-options'):
             if len(o) > 13:
                 solver = o[14:]
-                solver_options[solver]['options'] += ' ' + a
+                solver_options[solver]['options'] += f' {a}'
             else:
                 for item in list(solver_options.values()):
-                    item['options'] += ' ' + a
+                    item['options'] += f" {a}"
         elif o.startswith('--wait-time'):
             wait_time = float(a)
             if wait_time < 0:
@@ -330,7 +330,7 @@ def parse_arguments(args):
                 solver = o[12:]
                 solver_options[solver]['wait_time'] = wait_time
             else:
-                for item in list(solver_options.values()):
+                for item in solver_options.values():
                     item['wait_time'] = wait_time
         elif o.startswith('--restart-time'):
             rest_time = float(a)
@@ -342,21 +342,21 @@ def parse_arguments(args):
                 solver = o[15:]
                 solver_options[solver]['restart_time'] = rest_time
             else:
-                for item in list(solver_options.values()):
+                for item in solver_options.values():
                     item['restart_time'] = rest_time
         elif o.startswith('--switch-search'):
             if len(o) > 15:
                 solver = o[16:]
                 solver_options[solver]['switch_search'] = True
             else:
-                for item in list(solver_options.values()):
+                for item in solver_options.values():
                     item['switch_search'] = True
         elif o.startswith('--max-restarts'):
             if len(o) > 14:
                 solver = o[15:]
                 solver_options[solver]['max_restarts'] = int(a)
             else:
-                for item in list(solver_options.values()):
+                for item in solver_options.values():
                     item['max_restarts'] = int(a)
         elif o == '--keep':
             keep = True
@@ -365,7 +365,7 @@ def parse_arguments(args):
             backup = 'chuffed'
         elif o == '--check-solvers':
             s = a.split(',')
-            for i in range(0, len(s) / 2):
+            for i in range(0, len(s) // 2):
                 unt = s[2 * i]
                 tru = s[2 * i + 1]
                 if unt == tru:
@@ -380,7 +380,7 @@ def parse_arguments(args):
             else:
                 opts.append(['--' + o[6:], a])
 
-    tmp_id = tmp_dir + '/' + gethostname() + '_' + str(os.getpid())
+    tmp_id = f"{tmp_dir}/{gethostname()}_{os.getpid()}"
     problem = Problem(mzn, dzn, tmp_id + '.ozn', solve)
     return problem, k, timeout, pfolio, backup, kb, lims, static, extractor, \
            cores, solver_options, tmp_id, mem_limit, keep, all_opt, free_opt, lb, ub, \
@@ -398,7 +398,7 @@ def get_args(args, pfolio):
         ]
         long_options = ['fzn-options', 'wait-time', 'restart-time', 'max-restarts']
         long_options += [
-            o + '-' + s for o in long_options for s in pfolio
+            f"{o}-{s}" for o in long_options for s in pfolio
         ]
         long_options += ['check-solvers']
         csp_opts = ['csp-' + o + '=' for o in options + long_options]
@@ -455,8 +455,8 @@ def get_solve(mzn):
         model = include_list.pop()
         if os.path.exists(model):
             lines = open(model, 'r').read().split(';')
-        elif os.path.exists(mzn_dir + '/' + model):
-            model = mzn_dir + '/' + model
+        elif os.path.exists(f"{mzn_dir}/{model}"):
+            model = f"{mzn_dir}/{model}"
             lines = open(model, 'r').read().split(';')
         else:
             continue
