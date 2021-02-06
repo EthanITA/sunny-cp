@@ -1,4 +1,9 @@
-
+# ./src/solver.py
+## modifiche
+### RunningSolver
+- non è possibile avere piu costruttori in una classe in python
+- concatenazione in f-string
+- in `inject_bound()`, inutile conversione di `string()` a `list()` usando metodo `split()`
 # ./src/scheduling.py
 ## modifiche
 ### get_neighbours(): 

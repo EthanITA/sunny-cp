@@ -1,9 +1,9 @@
-'''
+"""
 Solver is the abstraction of a constituent solver of the portfolio. Each solver
 must be an object of class Solver.
 
 RunningSolver is instead a solver running on a given FlatZinc model.
-'''
+"""
 
 import psutil
 
@@ -96,9 +96,6 @@ class RunningSolver:
     # Maximum number of solver restarts allowed.
     max_restarts = -1
 
-    def __init__(self):
-        pass
-
     def __init__(
             self, solver, solve, fzn_path, options, wait_time, restart_time, timeout,
             switch, max_restarts
@@ -143,16 +140,16 @@ class RunningSolver:
         Returns the command for converting a given MiniZinc model to FlatZinc by
         using solver-specific redefinitions.
         """
-        cmd = 'mzn2fzn --output-ozn-to-file ' + pb.ozn_path + ' -I ' \
-              + self.solver.mznlib + ' ' + pb.mzn_path + ' ' + pb.dzn_path \
-              + ' -o ' + self.fzn_path
+        cmd = f"mzn2fzn --output-ozn-to-file {pb.ozn_path}" \
+              f" -I {self.solver.mznlib} {pb.mzn_path} {pb.dzn_path}" \
+              f" -o {self.fzn_path}"
         return cmd.split()
 
     def flatzinc_cmd(self, pb):
         """
         Returns the command for executing the FlatZinc model.
         """
-        cmd = self.solver.fzn_exec + ' ' + self.fzn_options + ' ' + self.fzn_path
+        cmd = f"{self.solver.fzn_exec} {self.fzn_options} {self.fzn_path}"
         return cmd.split()
 
     def set_obj_var(self, problem, lb, ub):
@@ -177,7 +174,7 @@ class RunningSolver:
                 if tokens[0] == 'var' and self.obj_var in tokens \
                         and 'output_var' not in tokens and '=' not in tokens:
                     self.output_var = False
-                    line = line.replace(';', '') + ' :: output_var;\n'
+                    line = f"{line.replace(';', '')} :: output_var;\n"
                 lines.append(line)
             infile.close()
         with open(self.fzn_path, 'w') as outfile:
@@ -199,8 +196,8 @@ class RunningSolver:
         with open(self.fzn_path, 'r') as infile:
             add = True
             for line in infile.readlines():
-                if add and 'constraint' in line.split():
-                    lines.append(cons + ';\n')
+                if add and 'constraint' in line:
+                    lines.append(f"{cons};\n")
                     add = False
                 lines.append(line)
         with open(self.fzn_path, 'w') as outfile:
