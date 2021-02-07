@@ -186,7 +186,6 @@ def exit_error(status, *reasons):
     sys.exit(status)
 
 
-
 def eval_extractor(cls_extractor):
     if cls_extractor == "mzn2feat":
         return mzn2feat

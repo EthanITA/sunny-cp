@@ -1,3 +1,16 @@
+# ./bin/sunny-cp
+## modifiche
+- tutte le chiamate a send_signal_solver(signal.SIGKILL, solver) sono state sotituite a una nuova funzione kill_solver(solver, *reasons), che fa una print dei motivi e chiama la funzione di prima. E' stato fatto per avere più chiaro il codice
+- varie conversioni inutili a list
+- varie concatenazioni string in f-string
+
+## potenziali conflitti con moduli esterni
+- problem https://pypi.org/project/problem/
+- parsing https://pypi.org/project/parsing/
+- solver https://pypi.org/project/solver/
+- features https://pypi.org/project/features/
+- scheduling https://pypi.org/project/scheduling/
+
 # ./src/parsing.py 
 ## modifiche
 - tolto gli `eval()` con `eval_extractor()`, che fa essenzialmente un switch-case e prende la classe corrispondente
