@@ -62,7 +62,8 @@ Portfolio Options
     default. Also the constant +inf is allowed for the times t_i.
   -e <EXTRACTOR>
     Feature extractor used by sunny-cp. By default is "mzn2feat", but it can be
-    changed by defining a corresponding class in src/features.py.
+    changed by defining a corresponding class in src/features.py and the function
+    eval_extractor() in this file.
   -a
     Prints to standard output all the solutions of the problem  (for CSPs only).
     or all the sub-optimal solutions until the optimum is found (for COPs only).
@@ -178,6 +179,21 @@ from pfolio_solvers import *
 from problem import *
 
 
+def exit_error(status, *reasons):
+    for reason in reasons:
+        print(reason, file=sys.stderr)
+    print('For help use --help', file=sys.stderr)
+    sys.exit(status)
+
+
+
+def eval_extractor(cls_extractor):
+    if cls_extractor == "mzn2feat":
+        return mzn2feat
+    else:
+        exit_error(2, f"Error! Exctractor {cls_extractor} is not defined")
+
+
 def parse_arguments(args):
     """
     Parse the options specified by the user and returns the corresponding
@@ -195,7 +211,7 @@ def parse_arguments(args):
     timeout = DEF_TOUT
     backup = DEF_BACKUP
     static = DEF_STATIC
-    extractor = eval(DEF_EXTRACTOR)
+    extractor = eval_extractor(DEF_EXTRACTOR)
     cores = DEF_CORES
     tmp_dir = DEF_TMP_DIR
     keep = DEF_KEEP
@@ -227,9 +243,7 @@ def parse_arguments(args):
         elif o == '-P':
             pfolio = a.split(',')
             if not pfolio:
-                print('Error! Empty portfolio ', file=sys.stderr)
-                print('For help use --help', file=sys.stderr)
-                sys.exit(2)
+                exit_error(2, 'Error! Empty portfolio')
         elif o == '-A':
             solvers = a.split(',')
             pfolio += [s for s in solvers if s not in pfolio]
@@ -244,26 +258,20 @@ def parse_arguments(args):
             else:
                 cores = n
         elif o == '-e':
-            extractor = eval(a)
+            extractor = eval_extractor(a)
         elif o == '-k':
             k = int(a)
             if k < 0:
-                print(f'Error! Negative value {a} for k value.', file=sys.stderr)
-                print('For help use --help', file=sys.stderr)
-                sys.exit(2)
+                exit_error(2, f'Error! Negative value {a} for k value.')
         elif o == '-T':
             timeout = float(a)
             if timeout <= 0:
-                print(f'Error! Non-positive value {a} for timeout.', file=sys.stderr)
-                print('For help use --help', file=sys.stderr)
-                sys.exit(2)
+                exit_error(2, f'Error! Non-positive value {a} for timeout.')
         elif o == '-b':
             backup = a
         elif o == '-K':
             if not os.path.exists(a):
-                print(f'Error! Directory {a} not exists.', file=sys.stderr)
-                print('For help use --help', file=sys.stderr)
-                sys.exit(2)
+                exit_error(2, f'Error! Directory {a} not exists.')
             name = [token for token in a.split('/') if token][-1]
             if a[-1] != '/':
                 path = f"{a}/"
@@ -276,28 +284,20 @@ def parse_arguments(args):
             kb = f"{path}{name}_{pb}"
             lims = f"{path}{name}_lims_{pb}"
             if not os.path.exists(kb):
-                print(f'Error! File {kb} not exists.', file=sys.stderr)
-                print('For help use --help', file=sys.stderr)
-                sys.exit(2)
+                exit_error(2, f'Error! File {kb} not exists.')
             if not os.path.exists(lims):
-                print(f'Error! File {lims} not exists.', file=sys.stderr)
-                print('For help use --help', file=sys.stderr)
-                sys.exit(2)
+                exit_error(2, f'Error! File {lims} not exists.')
         elif o == '-s':
             s = a.split(',')
             for i in range(0, len(s) // 2):
                 solver = s[2 * i]
                 time = float(s[2 * i + 1])
                 if time < 0:
-                    print('Error! Not acceptable negative time', file=sys.stderr)
-                    print('For help use --help', file=sys.stderr)
-                    sys.exit(2)
+                    exit_error(2, 'Error! Not acceptable negative time')
                 static.append((solver, time))
         elif o == '-d':
             if not os.path.exists(a):
-                print(f'Error! Directory {a} not exists.', file=sys.stderr)
-                print('For help use --help', file=sys.stderr)
-                sys.exit(2)
+                exit_error(2, f'Error! Directory {a} not exists.')
             name = [token for token in a.split('/') if token][-1]
             if a[-1] == '/':
                 tmp_dir = a[: -1]
@@ -323,9 +323,7 @@ def parse_arguments(args):
         elif o.startswith('--wait-time'):
             wait_time = float(a)
             if wait_time < 0:
-                print('Error! Not acceptable negative time', file=sys.stderr)
-                print('For help use --help', file=sys.stderr)
-                sys.exit(2)
+                exit_error(2, 'Error! Not acceptable negative time')
             if len(o) > 11:
                 solver = o[12:]
                 solver_options[solver]['wait_time'] = wait_time
@@ -335,9 +333,7 @@ def parse_arguments(args):
         elif o.startswith('--restart-time'):
             rest_time = float(a)
             if rest_time < 0:
-                print('Error! Not acceptable negative time', file=sys.stderr)
-                print('For help use --help', file=sys.stderr)
-                sys.exit(2)
+                exit_error(2, 'Error! Not acceptable negative time')
             if len(o) > 14:
                 solver = o[15:]
                 solver_options[solver]['restart_time'] = rest_time
@@ -369,9 +365,7 @@ def parse_arguments(args):
                 unt = s[2 * i]
                 tru = s[2 * i + 1]
                 if unt == tru:
-                    print('Error! A solver is either trusted or untrusted!', file=sys.stderr)
-                    print('For help use --help', file=sys.stderr)
-                    sys.exit(2)
+                    exit_error(2, 'Error! A solver is either trusted or untrusted!')
                 check[unt] = tru
         elif o.startswith('--csp-') and solve == 'sat' or \
                 o.startswith('--cop-') and solve != 'sat':
@@ -415,29 +409,21 @@ def get_args(args, pfolio):
             args, 'hafT:k:b:K:s:d:p:e:x:m:l:u:P:R:A:', long_options
         )
     except getopt.error as msg:
-        print(msg)
-        print('For help use --help', file=sys.stderr)
-        sys.exit(2)
+        exit_error(2, msg)
 
     if len(args) == 0:
         for o, a in opts:
             if o in ('-h', '--help'):
                 print(__doc__)
                 sys.exit(0)
-        print('Error! No arguments given.', file=sys.stderr)
-        print('For help use --help', file=sys.stderr)
-        sys.exit(2)
+        exit_error(2, 'Error! No arguments given.')
     mzn = args[0]
     if not mzn.endswith('.mzn'):
-        print('Error! MiniZinc input model must have .mzn extension.', file=sys.stderr)
-        print('For help use --help', file=sys.stderr)
-        sys.exit(2)
+        exit_error(2, 'Error! MiniZinc input model must have .mzn extension.')
     if len(args) > 1:
         dzn = args[1]
         if not dzn.endswith('.dzn'):
-            print('Error! MiniZinc input data must have .dzn extension.', file=sys.stderr)
-            print('For help use --help', file=sys.stderr)
-            sys.exit(2)
+            exit_error(2, 'Error! MiniZinc input data must have .dzn extension.')
     return mzn, dzn, opts
 
 

@@ -1,19 +1,18 @@
 # ./src/parsing.py 
 ## modifiche
+- tolto gli `eval()` con `eval_extractor()`, che fa essenzialmente un switch-case e prende la classe corrispondente
+- aggiunto fz. `exit_error(status, *reasons)` in modo tale da evitare i copia-incolla di `"For help use --help"` e i `file=sys.stderr`. Di conseguenza sostituito tutte le parti di codice di questa forma:
+    ```
+    print("Error! ...", file=..) 
+    print("For help..." file=..) 
+    sys.exit(2)
+    ```
 ### parse_arguments()
 - semplificato inizializzazione di `solver_options`
 - rimosse varie conversioni inutili da iteratori a liste 
 - varie conversione da concatenazione a f-string
 ### get_solve()
 - varie conversione da concatenazione a f-string
-
-## NOTE
-### parse_arguments()
-- L'`eval()` per il caso `"-e"` non ho trovato modo di cambiarlo per via di come è stato definito, di conseguenza non ho toccato neppure `extractor = eval(DEF_EXTRACTOR)`
-    ```
-    -e <EXTRACTOR>
-    Feature extractor used by sunny-cp. By default is "mzn2feat", but it can be changed by defining a corresponding class in src/features.py.
-    ```
 
 # ./src/sunny_server.py
 ## modifiche

@@ -1,6 +1,6 @@
-'''
+"""
 Default settings for sunny-cp parameters.
-'''
+"""
 
 import os
 from multiprocessing import cpu_count
