@@ -10,15 +10,13 @@
 - il for per inizializzare `solved` e `times` si può farlo inline
 - conversione in `list()` inutile di `neighbours.items()` nel statement del for
 - convertitio `eval()` in `ast.literal_eval()`
-- `old_pfolio = best_pfolio`, `old_pfolio` ha lo stesso oggetto di `best_pfolio`! Per evitare effetti non voluti è stato utilizzato uno shallow copy(in questo specifico caso il riferimento di `best_pfolio` a quell'oggetto viene aggiornato, quindi non crea problemi).
+- `old_pfolio = best_pfolio` e `if old_pfolio == best_pfolio` ora viene usato un semplice booleano per il controllo
 - conversione inutile da `[]` a `set()`
-- `round(timeout / n * ns)` inutile in quanto `timeout`, `n` e `ns` sono interi (in python 2 la diviosne fra interi restituisce un intero), per ottenere lo stesso comportamento basta utilizzare l'operatore `//` di python 3
-- tolto `round()` di `tot_time` perchè è una somma di interi
 - `backup in list(schedule.keys())` fa operazioni ridondanti, basta `backup in schedule` per vedere se `backup` è una chiave di `schedule`
 ### sunny_cop()
 - for di inizializzazione inline
 - conversione inutile
-- `old_pfolio = best_pfolio`, `old_pfolio` ha lo stesso oggetto di `best_pfolio`! Per evitare effetti non voluti è stato utilizzato uno shallow copy(in questo specifico caso non crea problemi, il riferimento di `best_pfolio` a quell'oggetto viene aggiornato).
+- `old_pfolio = best_pfolio` e `if old_pfolio == best_pfolio` ora viene usato un semplice booleano per il controllo
 - rimosso definizioni inutili di `time` e `area`
 - `port_scores` semplificato
 - operazione ridondante (riga 160)
@@ -62,7 +60,6 @@
 # ./kb/util/csv2kb.py
 ## modifiche
 - aggiunto `import sys`
-- unito codice duplicato per casi `o == '-s'` e `o == '-a'`
 - `kb_path` concatenazione string in f-string
 
 # ./kb/util/helper_kb.py

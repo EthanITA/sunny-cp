@@ -57,7 +57,7 @@ def sunny_csp(neighbours, k, timeout, pfolio, backup, min_size):
     m = len(pfolio)
     # Select the best sub-portfolio. min_size is the minimum cardinality.
     for i in range(min_size, m + 1):
-        old_pfolio = best_pfolio.copy()
+        same_pfolio = True
         for j in range(binom(m, i)):
             solved_instances = set()
             solving_time = 0
@@ -72,7 +72,8 @@ def sunny_csp(neighbours, k, timeout, pfolio, backup, min_size):
                 min_time = solving_time
                 max_solved = num_solved
                 best_pfolio = sub_pfolio
-        if old_pfolio == best_pfolio:
+                same_pfolio = False
+        if same_pfolio:
             break
     # n is the number of instances solved by each solver plus the instances
     # that no solver can solver.
@@ -81,12 +82,12 @@ def sunny_csp(neighbours, k, timeout, pfolio, backup, min_size):
     # Compute the schedule and sort it by number of solved instances.
     for solver in best_pfolio:
         ns = len(solved[solver])
-        if ns == 0 or timeout // n * ns == 0:
+        if ns == 0 or round(timeout / n * ns) == 0:
             continue
-        schedule[solver] = timeout // n * ns
+        schedule[solver] = timeout / n * ns
     tot_time = sum(schedule.values())
     # Allocate to the backup solver the (eventual) remaining time.
-    if tot_time < timeout:
+    if round(tot_time) < timeout:
         if backup in schedule:
             schedule[backup] += timeout - tot_time
         else:
@@ -121,7 +122,7 @@ def sunny_cop(neighbours, k, timeout, pfolio, backup, min_size):
     # Select the best sub-portfolio.
     m = len(pfolio)
     for i in range(min_size, m + 1):
-        old_pfolio = best_pfolio.copy()
+        same_pfolio = True
         for j in range(binom(m, i)):
             score = 0
             # get the (j + 1)-th subset of cardinality i
@@ -138,7 +139,8 @@ def sunny_cop(neighbours, k, timeout, pfolio, backup, min_size):
                 min_area = area
                 max_score = score
                 best_pfolio = sub_pfolio
-        if old_pfolio == best_pfolio:
+                same_pfolio = False
+        if same_pfolio:
             break
     # n is the number of instances solved by each solver plus the instances
     # that no solver can solver.
@@ -147,9 +149,9 @@ def sunny_cop(neighbours, k, timeout, pfolio, backup, min_size):
     # compute the schedule and sort it by number of solved instances.
     for solver in best_pfolio:
         ns = sum(scores[solver])
-        if ns == 0 or timeout // n * ns == 0:
+        if ns == 0 or round(timeout / n * ns) == 0:
             continue
-        schedule[solver] = timeout // n * ns
+        schedule[solver] = timeout / n * ns
     tot_time = sum(schedule.values())
     if round(tot_time) < timeout:
         if backup in schedule.keys():
