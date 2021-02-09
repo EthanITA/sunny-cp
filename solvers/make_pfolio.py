@@ -32,7 +32,8 @@ with open(pfolio_path, 'w') as pfolio_file:
         pfolio_file.write(f"{solver}.name = '{solver}'\n")
         pfolio_file.write(f"{solver}.mznlib = '{solvers_path}{solver}/mzn-lib'\n")
         pfolio_file.write(f"{solver}.fzn_exec = '{solvers_path}{solver}/fzn-exec'\n")
-        cmd = f"minizinc -I {solvers_path}{solver}/mzn-lib {solvers_path}" \
+        cmd = f"minizinc -c --solver org.minizinc.mzn-fzn " \
+              f"-I {solvers_path}{solver}/mzn-lib {solvers_path}" \
               f"constraint.mzn --output-to-stdout --no-output-ozn"
         proc = psutil.Popen(cmd.split(), stdout=PIPE, stderr=PIPE)
         out, err = proc.communicate()
