@@ -20,12 +20,10 @@ import psutil
 class mzn2feat:
 
     @staticmethod
-    def extract_features(args):
-        problem = args[0]
+    def extract_features(problem, lims_file):
         not_norm_vector = mzn2feat.extract(problem)
         if not not_norm_vector:
             return None
-        lims_file = args[1]
 
         with open(lims_file, 'r') as infile:
             lims = json.load(infile)

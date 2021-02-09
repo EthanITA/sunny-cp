@@ -20,6 +20,7 @@ sys.path.append(SUNNY_HOME + '/src')
 from param_parser import parse_arguments
 from mzn_solver import RunningSolver
 from sunny_scheduling import get_neighbours, sunny_cop, sunny_csp, parallelize
+from pfolio_solvers import g12osicbc, gecode, chuffed
 
 # List of the running solvers.
 RUNNING_SOLVERS = []
@@ -37,6 +38,17 @@ LOWER_BOUND = float('-inf')
 UPPER_BOUND = float('+inf')
 # Initial starting time of the algorithm.
 STARTING_TIME = time.time()
+
+
+def eval_solver(solver):
+    if solver == "g12osicbc":
+        return g12osicbc
+    elif solver == "gecode":
+        return gecode
+    elif solver == "chuffed":
+        return chuffed
+    else:
+        sys.exit(f"Error! Solver {solver} not defined")
 
 
 def handler(signum=None, frame=None):
@@ -203,7 +215,7 @@ def presolve(
 
         if not neigh_computed and len(RUNNING_SOLVERS) < cores:
             print('% Extracting features...')
-            feat_vector = extractor.extract_features([problem, lims])
+            feat_vector = extractor.extract_features(problem, lims)
             if feat_vector:
                 neighbours = get_neighbours(feat_vector, k, kb)
                 if k <= 0:
@@ -361,13 +373,13 @@ def check_solution(solver, problem, solution, bound):
 
     tmp_fzn = tempfile.NamedTemporaryFile().name + '.fzn'
     # FIXME
-    cmd = f"mzn2fzn --no-output-ozn -I {eval(solver).mznlib} {tmp_mzn} {problem.dzn_path} -o {tmp_fzn}"
+    cmd = f"mzn2fzn --no-output-ozn -I {eval_solver(solver).mznlib} {tmp_mzn} {problem.dzn_path} -o {tmp_fzn}"
     proc = Popen(cmd.split(), stdout=PIPE, stderr=PIPE)
     (out, err) = proc.communicate()
     if 'model inconsistency detected'.encode("utf-8") in err or not os.path.exists(tmp_fzn):
         return False
     # FIXME
-    solv = eval(solver)
+    solv = eval_solver(solver)
     inf = float('inf')
     rs = RunningSolver(
         solv, problem.solve, tmp_fzn, '', inf, inf, inf, False, inf
@@ -608,7 +620,7 @@ def init_schedule(schedule, options, solve, tmp_id, all_opt, free_opt):
     running_schedule = []
     for (s, t) in schedule:
         # FIXME
-        so = eval(s)
+        so = eval_solver(s)
         fzn_path = f"{tmp_id}.{s}.fzn"
         opts = options[s]['options']
         if all_opt or solve != 'sat':
@@ -631,8 +643,8 @@ def main(args):
 
         # Input arguments parsing and initialization.
         problem, k, timeout, pfolio, backup, kb, lims, static, extractor, cores, \
-            solver_options, tmp_id, mem_limit, KEEP, all_opt, free_opt, LOWER_BOUND, \
-            UPPER_BOUND, check = parse_arguments(args)
+        solver_options, tmp_id, mem_limit, KEEP, all_opt, free_opt, LOWER_BOUND, \
+        UPPER_BOUND, check = parse_arguments(args)
         TMP_FILES = [problem.ozn_path]
         static = init_schedule(
             static, solver_options, problem.solve, tmp_id, all_opt, free_opt
