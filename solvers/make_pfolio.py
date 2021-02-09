@@ -40,7 +40,7 @@ with open(pfolio_path, 'w') as pfolio_file:
             print(err)
             print('Error! Solver', solver, 'not installed')
             sys.exit(1)
-        for line in str(out).split(';\n'):
+        for line in out.decode("utf-8") .split(';\n'):
             # FIXME: For MiniZinc versions >= 2.1.6
             intro = 'X_INTRODUCED_0_ = '
             # FIXME: For MiniZinc versions <= 2.1.5
@@ -54,7 +54,7 @@ with open(pfolio_path, 'w') as pfolio_file:
                 line = line.replace('X_INTRODUCED_0_', val)
                 # FIXME: For MiniZinc versions <= 2.1.5
                 # line = line.replace('X_INTRODUCED_0', val)
-                pfolio_file.write(f"{solver}.constraint = {line}\n")
+                pfolio_file.write(f"{solver}.constraint = '{line}'\n")
                 break
         with open(f"{solvers_path}{solver}/opts", 'r') as opts:
             for line in opts:
