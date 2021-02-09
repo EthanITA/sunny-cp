@@ -21,7 +21,7 @@ with open(pfolio_path, 'w') as pfolio_file:
                " it automatically by using the\nmake_pfolio.py script in solvers folder" \
                ". Then, once the file is created, it \nis possible to customize each object" \
                ". Note that running make_pfolio.py script \nwill replace the current file." \
-               '\n"""\n\nfrom solver import Solver\n\n'
+               '\n"""\n\nfrom mzn_solver import Solver\n\n'
     pfolio_file.write(preamble)
 
     solvers_path = SUNNY_HOME + '/solvers/'

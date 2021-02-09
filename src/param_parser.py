@@ -62,7 +62,7 @@ Portfolio Options
     default. Also the constant +inf is allowed for the times t_i.
   -e <EXTRACTOR>
     Feature extractor used by sunny-cp. By default is "mzn2feat", but it can be
-    changed by defining a corresponding class in src/features.py and the function
+    changed by defining a corresponding class in src/feat_extractor.py and the function
     eval_extractor() in this file.
   -a
     Prints to standard output all the solutions of the problem  (for CSPs only).
@@ -174,9 +174,9 @@ import sys
 from socket import gethostname
 
 from defaults import *
-from features import *
+from feat_extractor import *
 from pfolio_solvers import *
-from problem import *
+from mzn_problem import *
 
 
 def exit_error(status, *reasons):

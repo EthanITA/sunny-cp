@@ -1,6 +1,6 @@
-'''
+"""
 Module for computing and parallelizing the solvers schedule of SUNNY algorithm.
-'''
+"""
 import ast
 import csv
 from math import sqrt

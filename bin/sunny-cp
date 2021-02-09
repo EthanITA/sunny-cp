@@ -17,11 +17,11 @@ import psutil
 SUNNY_HOME = os.path.realpath(__file__).split('/')[:-2]
 SUNNY_HOME = '/'.join(SUNNY_HOME)
 sys.path.append(SUNNY_HOME + '/src')
-from problem import *
-from parsing import *
-from solver import *
-from features import *
-from scheduling import *
+from mzn_problem import *
+from param_parser import *
+from mzn_solver import *
+from feat_extractor import *
+from sunny_scheduling import *
 from pfolio_solvers import *
 
 # List of the running solvers.
