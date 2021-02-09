@@ -61,21 +61,22 @@ def get_subset(h, k, elements):
     return ans
 
 
-'''
+""""
 # Dummy testing.
-from time import clock
+from time import time
+
 elements = [
-  'S_1', 'S_2', 'S_3', 'S_4', 'S_5', 'S_6',
-  'S_7', 'S_8', 'S_9', 'S_10', 'S_11', 'S_12'
+    'S_1', 'S_2', 'S_3', 'S_4', 'S_5', 'S_6',
+    'S_7', 'S_8', 'S_9', 'S_10', 'S_11', 'S_12'
 ]
 n = len(elements)
-start = clock()
+start = time()
 i = 0
 for k in range(2, n):
-  for h in range(0, binom(n, k)):
-    s = get_subset(h, k, elements)
-    print s
-    i += 1
-elapsed = (clock() - start)
-print "Computed", i, "subsets of", elements, "in", elapsed, "seconds"
-'''
+    for h in range(0, binom(n, k)):
+        s = get_subset(h, k, elements)
+        print(s)
+        i += 1
+elapsed = (time() - start)
+print("Computed", i, "subsets of", elements, "in", elapsed, "seconds")
+"""
