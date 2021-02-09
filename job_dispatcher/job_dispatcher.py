@@ -346,7 +346,7 @@ def worker(thread_num, database_file, timeout, url, hostname):
                             connection.commit()
                             logging.info("OK {}|{}".format(item, hash_id))
                 else:
-                    logging.error("ERROR {}. Thread {}. Request not well formed".format(item, thread_num, item[DZN_ID]))
+                    logging.error("ERROR {}. Thread {}. Request not well formed".format(item, thread_num))
             except requests.exceptions.ConnectionError as e:
                 logging.error("Error {}. Thread {}. Connection error {}".format(
                     item, thread_num, e))

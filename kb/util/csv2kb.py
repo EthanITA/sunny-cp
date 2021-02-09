@@ -41,10 +41,11 @@ Options:
 """
 
 import getopt
+import os
 import sys
 import traceback
 
-from helper_kb import *
+from helper_kb import make_kb, compute_infos
 
 
 def main(args):
@@ -142,7 +143,7 @@ def main(args):
             kb_path, kb_name, feat_file, lb_feat, ub_feat,
             scale, const, kb_csp, kb_cop
         )
-    except Exception as e:
+    except Exception:
         traceback.print_exc()
         if os.path.exists(kb_path):
             from shutil import rmtree

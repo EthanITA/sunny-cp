@@ -21,7 +21,6 @@ def compute_infos(
     max_val = {}
     min_values = {}
     max_values = {}
-    nan = float('nan')
     for row in reader:
         inst = row[0]
         solv = row[1]
@@ -33,14 +32,14 @@ def compute_infos(
 
         if check:
             check_invariant(
-                'info = unk \/ (goal != sat /\ info = sat) <==> time = T',
+                'info = unk \\/ (goal != sat /\\ info = sat) <==> time = T',
                 info == 'unk' or goal != 'sat' and info == 'sat',
                 time == timeout,
                 inst,
                 solv
             )
             check_invariant(
-                'goal = sat \/ info = unk \/ info = uns <==> val = nan',
+                'goal = sat \\/ info = unk \\/ info = uns <==> val = nan',
                 goal == 'sat' or info in ['unk', 'uns'],
                 val != val,
                 inst,
@@ -189,7 +188,6 @@ def make_kb(kb_path, kb_name, feat_file, lb, ub, scale, const, kb_csp, kb_cop):
     lims_csp = {}
     lims_cop = {}
     insts_csp = kb_csp.keys()
-    insts_cop = kb_cop.keys()
     for row in reader:
         inst = row[0]
         feat_vector = ast.literal_eval(row[1])

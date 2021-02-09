@@ -17,12 +17,9 @@ import psutil
 SUNNY_HOME = os.path.realpath(__file__).split('/')[:-2]
 SUNNY_HOME = '/'.join(SUNNY_HOME)
 sys.path.append(SUNNY_HOME + '/src')
-from mzn_problem import *
-from param_parser import *
-from mzn_solver import *
-from feat_extractor import *
-from sunny_scheduling import *
-from pfolio_solvers import *
+from param_parser import parse_arguments
+from mzn_solver import RunningSolver
+from sunny_scheduling import get_neighbours, sunny_cop, sunny_csp, parallelize
 
 # List of the running solvers.
 RUNNING_SOLVERS = []
@@ -342,7 +339,7 @@ def read_lines(proc):
     """
     try:
         return proc.stdout.read()
-    except:
+    except Exception:
         return ''
 
 
@@ -354,7 +351,7 @@ def check_solution(solver, problem, solution, bound):
     with open(problem.mzn_path, 'r') as infile:
         with open(tmp_mzn, 'w') as outfile:
             for (var, val) in solution:
-                if not 'X_INTRODUCED_' in var and not '%' in var:
+                if not ('X_INTRODUCED_' in var) and not ('%' in var):
                     outfile.write(f"constraint {var} = {val};\n")
             for row in infile:
                 if row:
@@ -634,8 +631,8 @@ def main(args):
 
         # Input arguments parsing and initialization.
         problem, k, timeout, pfolio, backup, kb, lims, static, extractor, cores, \
-        solver_options, tmp_id, mem_limit, KEEP, all_opt, free_opt, LOWER_BOUND, \
-        UPPER_BOUND, check = parse_arguments(args)
+            solver_options, tmp_id, mem_limit, KEEP, all_opt, free_opt, LOWER_BOUND, \
+            UPPER_BOUND, check = parse_arguments(args)
         TMP_FILES = [problem.ozn_path]
         static = init_schedule(
             static, solver_options, problem.solve, tmp_id, all_opt, free_opt
@@ -690,7 +687,7 @@ def main(args):
         )
         solve(schedule, problem, cores, mem_limit, all_opt, check)
 
-    except Exception as e:
+    except Exception:
         print('% Unexpected Termination of sunny-cp.', file=sys.stderr)
         clean()
         traceback.print_exc()

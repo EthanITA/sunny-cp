@@ -170,13 +170,16 @@ Helper Options
 """
 
 import getopt
+import os
 import sys
 from socket import gethostname
 
-from defaults import *
-from feat_extractor import *
-from pfolio_solvers import *
-from mzn_problem import *
+from defaults import DEF_K, DEF_TOUT, DEF_PFOLIO, DEF_BACKUP, DEF_STATIC, DEF_KB_CSP, DEF_KB_COP, DEF_LIMS_CSP, \
+    DEF_LIMS_COP, DEF_EXTRACTOR, DEF_CORES, DEF_TMP_DIR, DEF_KEEP, DEF_WAIT_TIME, DEF_RESTART_TIME, DEF_MEM_LIMIT, \
+    DEF_OPTS, DEF_ALL, DEF_FREE, DEF_SWITCH, DEF_LB, DEF_UB, DEF_RESTARTS, DEF_CHECK
+from feat_extractor import mzn2feat
+from mzn_problem import Problem
+from pfolio_solvers import Solver
 
 
 def exit_error(status, *reasons):
@@ -376,8 +379,8 @@ def parse_arguments(args):
     tmp_id = f"{tmp_dir}/{gethostname()}_{os.getpid()}"
     problem = Problem(mzn, dzn, tmp_id + '.ozn', solve)
     return problem, k, timeout, pfolio, backup, kb, lims, static, extractor, \
-           cores, solver_options, tmp_id, mem_limit, keep, all_opt, free_opt, lb, ub, \
-           check
+        cores, solver_options, tmp_id, mem_limit, keep, all_opt, free_opt, lb, ub, \
+        check
 
 
 def get_args(args, pfolio):
@@ -449,14 +452,14 @@ def get_solve(mzn):
             include = False
             new_line = ''
             ignore = False
-            for l in line:
+            for char in line:
                 # Ignore comments.
-                if ignore or l == '%':
+                if ignore or char == '%':
                     ignore = True
-                    if l == '\n':
+                    if char == '\n':
                         ignore = False
                 else:
-                    new_line += l
+                    new_line += char
             tokens = new_line.split()
             for token in tokens:
                 if token == 'include' or token == 'include"':

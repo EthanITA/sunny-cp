@@ -5,7 +5,7 @@ import ast
 import csv
 from math import sqrt
 
-from combinations import *
+from combinations import binom, get_subset
 
 
 def get_neighbours(feat_vector, k, kb):
