@@ -38,7 +38,7 @@ with open(pfolio_path, 'w') as pfolio_file:
         proc = psutil.Popen(cmd.split(), stdout=PIPE, stderr=PIPE)
         out, err = proc.communicate()
         if proc.returncode != 0:
-            print(err)
+            print(err.decode("utf-8"))
             print('Error! Solver', solver, 'not installed')
             sys.exit(1)
         for line in out.decode("utf-8") .split(';\n'):

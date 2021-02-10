@@ -61,10 +61,6 @@ def handler(signum=None, frame=None):
     sys.exit(signum)
 
 
-for sig in [signal.SIGTERM, signal.SIGINT, signal.SIGHUP, signal.SIGQUIT]:
-    signal.signal(sig, handler)
-
-
 def send_signal_solver(signal, solver):
     """
     Sends the specified signal to the solver process, and to all its children.
@@ -129,7 +125,6 @@ def solve(schedule, problem, cores, mem_limit, all_opt, check):
                             f"% Killing solver {solver.name()}")
                 RUNNING_SOLVERS.remove(solver)
                 continue
-
         for solver in RUNNING_SOLVERS:
             # Read and process lines from the output stream of each process.
             lines = read_lines(solver.process)
@@ -155,7 +150,6 @@ def solve(schedule, problem, cores, mem_limit, all_opt, check):
                     time.time() - solver.solution_time > solver.wait_time:
                 solver_timeout(solver, problem, schedule)
                 continue
-
             # Restart a solver if its solution is obsolete and its restart time is
             # actually expired.
             if solver.status == 'flatzinc' \
@@ -372,13 +366,11 @@ def check_solution(solver, problem, solution, bound):
     outfile.close()
 
     tmp_fzn = tempfile.NamedTemporaryFile().name + '.fzn'
-    # FIXME
     cmd = f"mzn2fzn --no-output-ozn -I {eval_solver(solver).mznlib} {tmp_mzn} {problem.dzn_path} -o {tmp_fzn}"
     proc = Popen(cmd.split(), stdout=PIPE, stderr=PIPE)
     (out, err) = proc.communicate()
     if 'model inconsistency detected'.encode("utf-8") in err or not os.path.exists(tmp_fzn):
         return False
-    # FIXME
     solv = eval_solver(solver)
     inf = float('inf')
     rs = RunningSolver(
@@ -534,7 +526,7 @@ def solver_terminated(solver, problem, schedule):
                 if s.name() == solver.name():
                     schedule.remove(s)
                     if s.status != 'ready':
-                        kill_solver(solver)
+                        send_signal_solver(signal.SIGKILL, solver)
         # Launch a new solver if any.
         if schedule:
             new_solver = schedule.pop(0)
@@ -565,7 +557,7 @@ def solver_timeout(solver, problem, schedule):
                 print('% Solver not interrupted: it is the best one so far')
                 solver.timeout = float("+inf")
             else:
-                kill_solver(solver)
+                send_signal_solver(signal.SIGKILL, solver)
                 RUNNING_SOLVERS.remove(solver)
                 susp = [
                     s for s in SUSP_SOLVERS if s.name() == problem.best_solver
@@ -576,7 +568,7 @@ def solver_timeout(solver, problem, schedule):
                 # The schedule is no more needed.
                 schedule = []
                 for solver in SUSP_SOLVERS:
-                    kill_solver(solver)
+                    send_signal_solver(signal.SIGKILL, solver)
                 SUSP_SOLVERS = []
         else:
             if new_solver.name() != solver.name():
@@ -619,7 +611,6 @@ def init_schedule(schedule, options, solve, tmp_id, all_opt, free_opt):
     global TMP_FILES
     running_schedule = []
     for (s, t) in schedule:
-        # FIXME
         so = eval_solver(s)
         fzn_path = f"{tmp_id}.{s}.fzn"
         opts = options[s]['options']
@@ -707,6 +698,9 @@ def main(args):
 
     clean()
 
+
+for sig in [signal.SIGTERM, signal.SIGINT, signal.SIGHUP, signal.SIGQUIT]:
+    signal.signal(sig, handler)
 
 if __name__ == '__main__':
     main(sys.argv[1:])

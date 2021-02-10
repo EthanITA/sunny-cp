@@ -45,7 +45,7 @@ class mzn2feat:
         # Failure in features extraction.
         if proc.returncode != 0:
             return []
-        features = out.split(",")
+        features = out.decode("utf-8").split(",")
         return [float(f) for f in features]
 
     @staticmethod

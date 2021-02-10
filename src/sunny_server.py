@@ -122,7 +122,7 @@ class MyServer(BaseHTTPRequestHandler):
                 out, err = process.communicate()
                 if process.returncode != 0 and process.returncode != 124:
                     logging.debug("The command returned with return code {}. STDOUT <{}>. STDERR <{}>".format(
-                        process.returncode, out, err))
+                        process.returncode, out.decode("utf-8"), err.decode("utf-8"),))
                     self.send_response(400)
                     self.send_header('Content-type', 'text/plain')
                     self.end_headers()
