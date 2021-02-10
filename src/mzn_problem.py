@@ -43,13 +43,13 @@ class Problem:
         """
         Returns True iff an objective bound is known for this problem.
         """
-        return float("-inf") < self.best_bound < float("+inf")
+        return self.best_bound is not None and float("-inf") < self.best_bound < float("+inf")
 
     def bound_better_than(self, bound):
         """
         Returns True iff the current best bound is better than the specified bound.
         """
-        return self.isCOP() and self.has_bound() and (
+        return self.isCOP() and bound is not None and self.has_bound() and (
             self.solve == 'min' and self.best_bound < bound or
             self.solve == 'max' and self.best_bound > bound
         )
