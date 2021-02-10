@@ -350,7 +350,7 @@ def read_lines(proc):
     Returns the stream of the read lines of a process.
     """
     try:
-        return proc.stdout.read()
+        return proc.stdout.read().decode("utf-8")
     except Exception:
         return ''
 
@@ -505,7 +505,7 @@ def solver_terminated(solver, problem, schedule):
         RUNNING_SOLVERS.remove(solver)
     if solver.status == 'mzn2fzn':
         if solver.process.returncode == 0:
-            print(f"'% MiniZinc model converted by {solver.name()}.", end=' ')
+            print(f"% MiniZinc model converted by {solver.name()}.", end=' ')
             timeout = max(solver.timeout - (time.time() - solver.start_time), 0)
             print('Starting the FlatZinc execution for', timeout, 'seconds')
             solver.timeout = timeout

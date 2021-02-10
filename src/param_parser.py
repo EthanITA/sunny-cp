@@ -179,7 +179,7 @@ from defaults import DEF_K, DEF_TOUT, DEF_PFOLIO, DEF_BACKUP, DEF_STATIC, DEF_KB
     DEF_OPTS, DEF_ALL, DEF_FREE, DEF_SWITCH, DEF_LB, DEF_UB, DEF_RESTARTS, DEF_CHECK
 from feat_extractor import mzn2feat
 from mzn_problem import Problem
-from pfolio_solvers import Solver
+from pfolio_solvers import Solver, g12osicbc, gecode, chuffed
 
 
 def exit_error(status, *reasons):
