@@ -366,7 +366,8 @@ def check_solution(solver, problem, solution, bound):
     outfile.close()
 
     tmp_fzn = tempfile.NamedTemporaryFile().name + '.fzn'
-    cmd = f"mzn2fzn --no-output-ozn -I {eval_solver(solver).mznlib} {tmp_mzn} {problem.dzn_path} -o {tmp_fzn}"
+    cmd = f"minizinc -c --solver org.minizinc.mzn-fzn --no-output-ozn " \
+          f"-I {eval_solver(solver).mznlib} {tmp_mzn} {problem.dzn_path} -o {tmp_fzn}"
     proc = Popen(cmd.split(), stdout=PIPE, stderr=PIPE)
     (out, err) = proc.communicate()
     if 'model inconsistency detected'.encode("utf-8") in err or not os.path.exists(tmp_fzn):

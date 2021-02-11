@@ -20,6 +20,11 @@ COPY --from=jacopomauro/minizinc /tool/MiniZincIDE /tool/MiniZincIDE
 ENV PATH "$PATH:/tool/MiniZincIDE/bin"
 ENV LD_LIBRARY_PATH "$LD_LIBRARY_PATH:/tool/MiniZincIDE/lib"
 
+RUN printf "#!/bin/bash \n\
+minizinc -c --solver org.minizinc.mzn-fzn  " > /tool/MiniZincIDE/bin/mzn2fzn && \
+chmod +x /tool/MiniZincIDE/bin/mzn2fzn
+
+
 # Install feature extractor
 RUN cd /tool && \
   git clone --depth=1 https://github.com/CP-Unibo/mzn2feat.git && \
