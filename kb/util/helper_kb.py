@@ -205,7 +205,8 @@ def make_kb(kb_path, kb_name, feat_file, lb, ub, scale, const, kb_csp, kb_cop):
             continue
 
         if len(lims) == 0:
-            lims = {i: [feat_i, feat_i] for i, feat_i in enumerate(feat_vector)}
+            for i, feat_i in enumerate(feat_vector):
+                lims[i] = [feat_i, feat_i]
         else:
             for i in range(0, len(feat_vector)):
                 if feat_vector[i] < lims[i][0]:
