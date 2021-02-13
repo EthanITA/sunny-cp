@@ -72,7 +72,7 @@ def main(args):
     feat_file = args[1]
     info_file = args[2]
     timeout = 1800
-    SUNNY_HOME = os.path.realpath(__file__).split('/')[:-2]
+    SUNNY_HOME = os.path.realpath(__file__).split('/')[:-3]
     path = '/'.join(SUNNY_HOME) + '/kb'
     lb_feat = -1
     ub_feat = 1
