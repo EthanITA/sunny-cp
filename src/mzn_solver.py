@@ -4,7 +4,6 @@ must be an object of class Solver.
 
 RunningSolver is instead a solver running on a given FlatZinc model.
 """
-
 import psutil
 
 
@@ -140,10 +139,22 @@ class RunningSolver:
         Returns the command for converting a given MiniZinc model to FlatZinc by
         using solver-specific redefinitions.
         """
-        cmd = f"minizinc -c --solver org.minizinc.mzn-fzn " \
-              f"--output-ozn-to-file {pb.ozn_path}" \
-              f" -I {self.solver.mznlib} {pb.mzn_path} {pb.dzn_path}" \
+        # this import on the top of the file will cause a circular import error
+        # pfolio_solvers -> mzn_solver & mzn_solver -> pfolio_solvers
+        from pfolio_solvers import gecode, coin_bc, chuffed
+
+        cmd = f"minizinc -c --solver org.minizinc.mzn-fzn" \
+              f" {pb.mzn_path} {pb.dzn_path}" \
+              f" --output-ozn-to-file {pb.ozn_path}" \
               f" -o {self.fzn_path}"
+
+        if self.solver.name == coin_bc.name:
+            cmd += " -G linear"
+        elif self.solver.name == gecode.name or self.solver.name == chuffed.name:
+            cmd += f" -G {self.solver.name}"
+        else:
+            cmd += f" -I {self.solver.mznlib}"
+
         return cmd.split()
 
     def flatzinc_cmd(self, pb):
