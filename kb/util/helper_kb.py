@@ -49,9 +49,9 @@ def compute_infos(
             check_invariant(
                 't_i < T AND v_k = val AND (values = {} <==> val = nan)',
                 True,
-                not [t for t in values.keys() if t > timeout] and
-                last_val == val and
-                (not values or val == val) and (values or val != val),
+                len([t for t in values.keys() if t > timeout]) == 0 and
+                (not last_val or last_val == val) and
+                (len(values) == 0 or val == val) and (len(values) > 0 or val != val),
                 inst,
                 solv
             )
@@ -204,7 +204,7 @@ def make_kb(kb_path, kb_name, feat_file, lb, ub, scale, const, kb_csp, kb_cop):
             writer.writerow(kb_row)
             continue
 
-        if not lims:
+        if len(lims) == 0:
             lims = {i: [feat_i, feat_i] for i, feat_i in enumerate(feat_vector)}
         else:
             for i in range(0, len(feat_vector)):
