@@ -20,7 +20,7 @@ sys.path.append(SUNNY_HOME + '/src')
 from param_parser import parse_arguments
 from mzn_solver import RunningSolver
 from sunny_scheduling import get_neighbours, sunny_cop, sunny_csp, parallelize
-from pfolio_solvers import g12osicbc, gecode, chuffed
+from pfolio_solvers import coin_bc, gecode, chuffed
 
 # List of the running solvers.
 RUNNING_SOLVERS = []
@@ -41,11 +41,11 @@ STARTING_TIME = time.time()
 
 
 def eval_solver(solver):
-    if solver == "g12osicbc":
-        return g12osicbc
-    elif solver == "gecode":
+    if solver == coin_bc.name:
+        return coin_bc
+    elif solver == gecode.name:
         return gecode
-    elif solver == "chuffed":
+    elif solver == chuffed.name:
         return chuffed
     else:
         sys.exit(f"Error! Solver {solver} not defined")
