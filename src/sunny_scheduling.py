@@ -175,6 +175,6 @@ def parallelize(seq_sched, cores, timeout):
     seq_sched = [x for x in seq_sched if x[0] not in dict(par_sched).keys()]
     seq_time = sum(t for (_, t) in seq_sched)
     for (s, t) in seq_sched:
-        par_sched.append((s, t * timeout // seq_time))
+        par_sched.append((s, t * timeout / seq_time))
     assert round(sum(t for (s, t) in par_sched[cores - 1:]), 5) == timeout
     return par_sched
